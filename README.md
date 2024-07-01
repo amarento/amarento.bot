@@ -1,6 +1,6 @@
 # amarento 
 
-[Amarento website] (amerento.id)
+[Amarento website](https://www.amerento.id/)
 
 
 ## To do
