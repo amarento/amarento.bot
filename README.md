@@ -1,6 +1,6 @@
-# amarento \
+# amarento 
 
-amerento.id \
+amerento.id
 
 
 ## To do
