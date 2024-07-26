@@ -128,7 +128,7 @@ export const handleIncomingMessage = async (
       await sendTextMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
-        `Terima kasih! ${nConfirmGuest} orang akan datang di acara Pemberkatan / Holy Matrimony.`
+        `Thank you for confirming! ${nConfirmGuest} orang akan datang di acara *Pemberkatan / Holy Matrimony*.`
       );
 
       const buttons: ButtonMessage[] = [
@@ -243,7 +243,7 @@ export const handleIncomingMessage = async (
           return;
         }
 
-        const names = parseNamesFromInput(body, n_rsvp);
+        const names = parseNamesFromInput(body, state.getNRsvpWedcer());
         if (names.error.isError && names.error.message) {
           await markAsRead(BUSINESS_PHONE_NUMBER_ID, message.id);
           await sendTextMessage(
