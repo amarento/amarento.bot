@@ -1,14 +1,24 @@
 import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config({ path: "./../.env" });
 
-const numbers: string[] = ["4915237363126", "4915901993904", "4917634685672", "4915256917547"];
+import { summaryMessage } from "./message";
+import { ButtonMessage, sendInteractiveMessage } from "./message-sender";
+
+const { GRAPH_API_TOKEN } = process.env;
+const vio = ["6281231080808"];
+// const numbers: string[] = ["4915237363126", "4915901993904", "4917634685672", "4915256917547"];
+const numbers: string[] = ["4915237363126"];
+const BUSINESS_PHONE_NUMBER_ID: string = "370074172849087";
 
 async function sendWhatsAppMessages(number: string): Promise<void> {
-  const token: string =
-    "EAATo4FKSZAlkBOxZAaSl0YZAuY3GKUZAykdQVZCjsIaWaVUBzHwIpc84R1fuLIvbTKVKZAVFWkibZAT3TbweFW1nPZAG7H0hdlgjpHOVvgFtOOklrvLx80viU4CgCYK3CIyI5UZBx9ma8Uci1eVFRw5OwKNhjydYfplnuH0aobAkubwYDDmG4IYAlBplUaL8aD12VC6vJ67U1YeKMHUNxJ9SmmimPtv8ryYT4lsptvia433EY38W1aGyy";
-  const business_phone_number_id: string = "370074172849087";
+  if (GRAPH_API_TOKEN === undefined) {
+    console.error("API_TOKEN not found.");
+    return;
+  }
 
   const headers = {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${GRAPH_API_TOKEN}`,
     "Content-Type": "application/json",
   };
 
@@ -64,7 +74,7 @@ async function sendWhatsAppMessages(number: string): Promise<void> {
   try {
     console.log(JSON.stringify(body, null, 2));
     const firstResponse = await axios.post(
-      `https://graph.facebook.com/v20.0/${business_phone_number_id}/messages`,
+      `https://graph.facebook.com/v20.0/${BUSINESS_PHONE_NUMBER_ID}/messages`,
       body,
       { headers }
     );
@@ -78,40 +88,31 @@ async function sendWhatsAppMessages(number: string): Promise<void> {
       (error as any).response ? (error as any).response.data : (error as Error).message
     );
   }
-
-  // Wait for 60 seconds
-  await new Promise((resolve) => setTimeout(resolve, 60000));
-
-  const question_body = {
-    messaging_product: "whatsapp",
-    to: number,
-    type: "template",
-    template: {
-      name: "amarento_template_test_holmat",
-      language: {
-        code: "id",
-      },
-    },
-  };
-
-  try {
-    console.log(JSON.stringify(question_body, null, 2));
-    const secondResponse = await axios.post(
-      `https://graph.facebook.com/v20.0/${business_phone_number_id}/messages`,
-      question_body,
-      { headers }
-    );
-    console.log(
-      "Second message sent successfully. Response:",
-      JSON.stringify(secondResponse.data, null, 2)
-    );
-  } catch (error) {
-    console.error(
-      "Failed to send second message. Error:",
-      (error as any).response ? (error as any).response.data : (error as Error).message
-    );
-  }
 }
 
 // Example usage:
-numbers.map(async (number) => await sendWhatsAppMessages(number));
+// numbers.map(async (number) => await sendWhatsAppMessages(number));
+numbers.map(async (number) => {
+  const buttons: ButtonMessage[] = [
+    {
+      type: "reply",
+      reply: {
+        id: `#reply-reset-1`,
+        title: "YA",
+      },
+    },
+    {
+      type: "reply",
+      reply: {
+        id: `#reply-reset-2`,
+        title: "TIDAK",
+      },
+    },
+  ];
+  await sendInteractiveMessage(
+    BUSINESS_PHONE_NUMBER_ID,
+    number,
+    summaryMessage(false, 0, false, 0, ""),
+    buttons
+  );
+});
