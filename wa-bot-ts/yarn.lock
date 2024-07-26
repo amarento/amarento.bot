@@ -985,6 +985,11 @@ webidl-conversions@^3.0.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-3.0.1.tgz#24534275e2a7bc6be7bc86611cc16ae0a5654871"
   integrity sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
 
+whatsapp-api-js@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/whatsapp-api-js/-/whatsapp-api-js-3.1.0.tgz#9e36c5acb5ab82c22a1ed86d100c38f30a48d82f"
+  integrity sha512-xYdLnRhC/hO0TafS83NDRDb3ryXo4T83MHXt8m84OOqAXHiRwYrsT0Vz4Wm6Ji9ZhEp3BosEX1XQ5Hg9OzkPWg==
+
 whatwg-url@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/whatwg-url/-/whatwg-url-5.0.0.tgz#966454e8765462e37644d3626f6742ce8b70965d"

@@ -7,14 +7,18 @@
 - [ ] Implement logic to query and update database from response
 - [ ] Implement QR Code generator
 
-# 25.07.2022
+## 25.07.2022
 
 - [x] Handle error parsing names
-- [ ] Create class to handle user state
-- [ ] Handle people not coming to wedding ceremony
+- [x] Create class to handle user state
+- [x] Handle people not coming to wedding ceremony
 - [ ] Handle people coming alone to wedding ceremony
-- [ ] Create question for each template. TEMPLATE IS USELESS!
-- [ ] Goodbye message after "YES"
+- [x] Create question for each template. TEMPLATE IS USELESS!
+  - [x] Convert initial message to interactive message with CTA
+  - [x] Convert summary to interactive message
+  - [x] Convert good bye message to text message
+- [x] Goodbye message after "YES"
+- [ ] Add header to each message.
 
 ## NICE TO HAVE
 

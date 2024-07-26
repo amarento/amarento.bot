@@ -15,7 +15,7 @@ import {
 import {
   ButtonMessage,
   markAsRead,
-  sendInteractiveMessage,
+  sendInteractiveButtonMessage,
   sendTextMessage,
 } from "./message-sender";
 
@@ -55,13 +55,13 @@ export const handleIncomingMessage = async (
       },
     ];
     /** QUESTION 1 */
-    state.setNextQuestionId(1);
-    await sendInteractiveMessage(
+    await sendInteractiveButtonMessage(
       BUSINESS_PHONE_NUMBER_ID,
       status.recipient_id,
       "Apakah Anda akan menghadiri acara *Pemberkatan / Holy Matrimony*?",
       buttons
     );
+    state.setNextQuestionId(1);
   }
 
   if (message === undefined) return;
@@ -89,7 +89,7 @@ export const handleIncomingMessage = async (
             },
           },
         ];
-        await sendInteractiveMessage(
+        await sendInteractiveButtonMessage(
           BUSINESS_PHONE_NUMBER_ID,
           message.from,
           "Apakah Anda akan menghadiri acara *Resepsi / Wedding Ceremony*?",
@@ -111,7 +111,7 @@ export const handleIncomingMessage = async (
           title: (i + 1).toString(),
         },
       }));
-      await sendInteractiveMessage(
+      await sendInteractiveButtonMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
         numberOfGuestQuestion(n_rsvp, "Holy Matrimony"),
@@ -147,7 +147,7 @@ export const handleIncomingMessage = async (
           },
         },
       ];
-      await sendInteractiveMessage(
+      await sendInteractiveButtonMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
         "Apakah Anda akan menghadiri acara *Resepsi / Wedding Ceremony*?",
@@ -178,7 +178,7 @@ export const handleIncomingMessage = async (
             },
           },
         ];
-        await sendInteractiveMessage(
+        await sendInteractiveButtonMessage(
           BUSINESS_PHONE_NUMBER_ID,
           message.from,
           summaryMessage(
@@ -203,7 +203,7 @@ export const handleIncomingMessage = async (
           title: (i + 1).toString(),
         },
       }));
-      await sendInteractiveMessage(
+      await sendInteractiveButtonMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
         numberOfGuestQuestion(n_rsvp, "Wedding Cerremony"),
@@ -275,7 +275,7 @@ export const handleIncomingMessage = async (
             },
           },
         ];
-        await sendInteractiveMessage(
+        await sendInteractiveButtonMessage(
           BUSINESS_PHONE_NUMBER_ID,
           message.from,
           summaryMessage(
@@ -327,7 +327,7 @@ export const handleIncomingMessage = async (
 
         /** QUESTION 1 */
         state.setNextQuestionId(1);
-        await sendInteractiveMessage(
+        await sendInteractiveButtonMessage(
           BUSINESS_PHONE_NUMBER_ID,
           message.from,
           "Apakah Anda akan menghadiri acara *Pemberkatan / Holy Matrimony*?",
