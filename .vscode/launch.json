@@ -6,6 +6,14 @@
       "request": "attach",
       "skipFiles": ["<node_internals>/**"],
       "type": "node"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      "program": "${workspaceFolder}/wa-bot-ts/server.ts",
+      "preLaunchTask": "tsc: build - wa-bot-ts/tsconfig.json",
+      "outFiles": ["${workspaceFolder}/wa-bot-ts/dist/**/*.js"]
     }
   ]
 }
