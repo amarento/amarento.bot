@@ -11,10 +11,16 @@ const headers = {
 
 export type ButtonMessage = {
   type: string;
-  reply: {
+  reply?: {
     id: string;
     title: string;
   };
+  parameters?: { display_text: string; url: string }[];
+};
+
+export type CTAParameter = {
+  display_text: string;
+  url: string;
 };
 
 export type TemplateComponent = {
@@ -90,8 +96,8 @@ export async function sendTextMessage(
   });
 }
 
-/** send interactive message */
-export async function sendInteractiveMessage(
+/** send interactive button message */
+export async function sendInteractiveButtonMessage(
   business_phone_number_id: string,
   to: string,
   message: string,
@@ -103,20 +109,58 @@ export async function sendInteractiveMessage(
     headers: headers,
     data: {
       messaging_product: "whatsapp",
-      recipient_type: "individual",
       to: to,
       type: "interactive",
       interactive: {
         type: "button",
         header: {
           type: "text",
-          text: "Wedding Ricky & Glo",
+          text: "The Wedding of Ricky & Glo",
         },
         body: {
           text: message,
         },
         action: {
           buttons: buttons,
+        },
+        footer: {
+          text: "Pesan ini terkirim secara otomatis oleh Amarento.",
+        },
+      },
+    },
+  });
+}
+
+/** send interactive cta message */
+export async function sendInteractiveCTAMessage(
+  business_phone_number_id: string,
+  to: string,
+  message: string,
+  parameter: CTAParameter
+) {
+  await axios({
+    method: "POST",
+    url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/messages`,
+    headers: headers,
+    data: {
+      messaging_product: "whatsapp",
+      to: to,
+      type: "interactive",
+      interactive: {
+        type: "cta_url",
+        header: {
+          type: "text",
+          text: "The Wedding of Ricky & Glo",
+        },
+        body: {
+          text: message,
+        },
+        action: {
+          name: "cta_url",
+          parameters: parameter,
+        },
+        footer: {
+          text: "Pesan ini terkirim secara otomatis oleh Amarento.",
         },
       },
     },
