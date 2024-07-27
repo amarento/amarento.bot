@@ -2,23 +2,22 @@ import dotenv from "dotenv";
 import { WhatsAppAPI } from "whatsapp-api-js/.";
 import { ActionCTA, Body, Footer, Header, Interactive } from "whatsapp-api-js/messages";
 import { initialMessage } from "./message";
-import { sendInteractiveCTAMessage } from "./message-sender";
+import {
+  sendInteractiveCTAMessage,
+  sendTemplateMessage,
+  TemplateComponent,
+} from "./message-sender";
+import { testers } from "./phone-book";
 dotenv.config({ path: "./../.env" });
 
 const { GRAPH_API_TOKEN, WEBHOOK_VERIFY_TOKEN } = process.env;
-
-/** list of phone numbers. */
-const girlies = ["6281231080808", "62895324913833"];
-const boys: string[] = ["4915237363126", "4915901993904", "4917634685672", "4915256917547"];
-const testers: string[] = ["4915237363126", "6289612424707"];
-
-/** business phone number id. */
-const BUSINESS_PHONE_NUMBER_ID: string = "370074172849087";
-
 if (GRAPH_API_TOKEN === undefined) {
   console.error("GRAPH_API_TOKEN not defined.");
   process.exit(1);
 }
+
+/** business phone number id. */
+const BUSINESS_PHONE_NUMBER_ID: string = "370074172849087";
 
 const Whatsapp = new WhatsAppAPI({
   token: GRAPH_API_TOKEN,
@@ -26,6 +25,7 @@ const Whatsapp = new WhatsAppAPI({
   webhookVerifyToken: WEBHOOK_VERIFY_TOKEN,
   secure: true,
 });
+
 async function sendInitialMessageWithLib(number: string): Promise<void> {
   const interactive_catalog_message = new Interactive(
     new ActionCTA("Wedding Website", "https://www.amarento.id/"),
@@ -69,8 +69,48 @@ async function sendInitialMessage(number: string) {
   );
 }
 
-testers.map(async (number) => await sendInitialMessage(number));
-// numbers.map(async (number) => await sendInitialMessageWithLib(number));
+export async function sendInitialMessageWithTemplate(number: string): Promise<void> {
+  const component: TemplateComponent[] = [
+    {
+      type: "header",
+      parameters: [
+        {
+          type: "text",
+          text: "Ricky & Glo",
+        },
+      ],
+    },
+    {
+      type: "body",
+      parameters: [
+        { type: "text", text: "Danny Kurniawan" },
+        { type: "text", text: "Ricky & Gloria" },
+        { type: "text", text: "Mr. Papa & Mama" },
+        { type: "text", text: "Mr. Papi & Mami" },
+        { type: "text", text: "Nama Hari, 01/01/2024" },
+        { type: "text", text: "Nama Gereja, Kota" },
+        { type: "text", text: "00:00" },
+        { type: "text", text: "Nama Tempat, Kota" },
+        { type: "text", text: "00:00" },
+        { type: "text", text: "2" },
+      ],
+    },
+    {
+      type: "button",
+      sub_type: "url",
+      index: 0,
+      parameters: [
+        {
+          type: "text",
+          text: "/",
+        },
+      ],
+    },
+  ];
+  await sendTemplateMessage(BUSINESS_PHONE_NUMBER_ID, number, "template_hello_1_test", component);
+}
+
+testers.map(async (number) => await sendInitialMessageWithLib(number));
 // numbers.map(async (number) => {
 //   const buttons: ButtonMessage[] = [
 //     {
