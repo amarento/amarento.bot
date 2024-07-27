@@ -5,6 +5,7 @@ import {
   WhatsappNotificationStatusStatus,
 } from "@daweto/whatsapp-api-types";
 import UserMessage from "../model/UserMessage";
+import UserMessageStore from "../model/UserMessageStore";
 import { indexToAlphabet, parseNamesFromInput } from "./functions";
 import {
   attendanceNamesQuestion,
@@ -20,20 +21,22 @@ import {
 } from "./message-sender";
 
 const BUSINESS_PHONE_NUMBER_ID: string = "370074172849087";
-const userMessages: { [key: string]: UserMessage } = {};
 
 export const handleIncomingMessage = async (
   message?: WhatsappNotificationMessage,
   status?: WhatsappNotificationStatus
 ) => {
-  console.log(userMessages);
+  if (status && UserMessageStore.get(status.recipient_id) === undefined)
+    UserMessageStore.set(status.recipient_id, new UserMessage());
+  if (message && UserMessageStore.get(message.from) === undefined)
+    UserMessageStore.set(message.from, new UserMessage());
 
-  if (status && userMessages[status.recipient_id] === undefined)
-    userMessages[status.recipient_id] = new UserMessage();
-  if (message && userMessages[message.from] === undefined)
-    userMessages[message.from] = new UserMessage();
+  const state = UserMessageStore.get(status?.recipient_id ?? message!.from);
+  if (state === undefined) {
+    console.error("State is empty.");
+    return;
+  }
 
-  const state = userMessages[status?.recipient_id ?? message!.from];
   if (
     status?.status === WhatsappNotificationStatusStatus.Delivered &&
     state.getNextQuestionId() === 0

@@ -4,14 +4,25 @@ import {
   WhatsappNotificationValue,
 } from "@daweto/whatsapp-api-types";
 import { createClient } from "@supabase/supabase-js";
+import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
+import UserMessageStore from "./model/UserMessageStore";
+import { sendInitialMessageWithTemplate } from "./utils/initial-message";
 import { handleIncomingMessage } from "./utils/message-handler";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+const options: CorsOptions = {
+  origin: "http://localhost:3001", // Replace with your frontend URL
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true, // Allow cookies to be sent
+  optionsSuccessStatus: 204,
+};
+app.use(cors(options));
 
 const { WEBHOOK_VERIFY_TOKEN, PORT, SUPABASE_URL, SUPABASE_KEY } = process.env;
 const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
@@ -55,6 +66,24 @@ app.get("/", async (req: Request, res: Response) => {
   const { data, error } = await supabase.from("guests").select();
   console.log(data?.[0]);
   res.send("AMARENTO IS THE BEST.");
+});
+
+app.post("/api/send-initial-message", (req: Request, res: Response) => {
+  console.log("Sending initial message.");
+  const testers: string[] = ["4915237363126", "6289612424707"];
+  testers.map(async (number) => await sendInitialMessageWithTemplate(number));
+  res.status(200).send("OK");
+});
+
+app.post("/api/reset-user-state", (req: Request, res: Response) => {
+  console.log("Resetting user state.");
+
+  res.status(200).send("OK");
+});
+
+app.get("/api/user-state", (req: Request, res: Response) => {
+  console.log("Getting user state.");
+  res.status(200).send(JSON.stringify(Object.fromEntries(UserMessageStore.getData())));
 });
 
 app.listen(PORT, () => {

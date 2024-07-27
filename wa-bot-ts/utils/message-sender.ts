@@ -144,6 +144,7 @@ export async function sendInteractiveCTAMessage(
     headers: headers,
     data: {
       messaging_product: "whatsapp",
+      recipient_type: "individual",
       to: to,
       type: "interactive",
       interactive: {
