@@ -6,8 +6,10 @@ import {
 import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
+import UserMessage from "./model/UserMessage";
 import UserMessageStore from "./model/UserMessageStore";
 import { supabase } from "./supabase";
+import { mapToArray } from "./utils/functions";
 import { sendInitialMessageWithTemplate } from "./utils/initial-message";
 import { handleIncomingMessage } from "./utils/message-handler";
 
@@ -70,7 +72,7 @@ app.post("/api/send-initial-message", async (req: Request, res: Response) => {
   if (error) return res.status(500).send({ success: false, message: error });
   clients?.map(
     async (client) =>
-      await sendInitialMessageWithTemplate(client.inv_names, client.wa_number, client.n_rsvp)
+      await sendInitialMessageWithTemplate(client.inv_names, client.wa_number, client.n_rsvp_plan)
   );
   res.status(200).send({ success: true, message: null });
 });
@@ -80,7 +82,9 @@ app.post("/api/reset-user-state", (req: Request, res: Response) => {
 });
 
 app.get("/api/user-state", (req: Request, res: Response) => {
-  res.status(200).send(JSON.stringify(Object.fromEntries(UserMessageStore.getData())));
+  const states = UserMessageStore.getData();
+  const response = mapToArray<string, UserMessage>(states);
+  res.status(200).send(response);
 });
 
 app.listen(PORT, () => {
