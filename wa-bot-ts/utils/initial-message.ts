@@ -68,7 +68,11 @@ async function sendInitialMessage(number: string) {
   );
 }
 
-export async function sendInitialMessageWithTemplate(number: string): Promise<void> {
+export async function sendInitialMessageWithTemplate(
+  name: string,
+  waNumber: string,
+  nRSVP: number
+): Promise<void> {
   const component: TemplateComponent[] = [
     {
       type: "header",
@@ -82,7 +86,7 @@ export async function sendInitialMessageWithTemplate(number: string): Promise<vo
     {
       type: "body",
       parameters: [
-        { type: "text", text: "Aaron Randy" },
+        { type: "text", text: name },
         { type: "text", text: "Ricky & Gloria" },
         { type: "text", text: "Mr. Papa & Mama" },
         { type: "text", text: "Mr. Papi & Mami" },
@@ -91,7 +95,7 @@ export async function sendInitialMessageWithTemplate(number: string): Promise<vo
         { type: "text", text: "00:00" },
         { type: "text", text: "Nama Tempat, Kota" },
         { type: "text", text: "00:00" },
-        { type: "text", text: "2" },
+        { type: "text", text: nRSVP.toString() },
       ],
     },
     {
@@ -106,7 +110,7 @@ export async function sendInitialMessageWithTemplate(number: string): Promise<vo
       ],
     },
   ];
-  await sendTemplateMessage(BUSINESS_PHONE_NUMBER_ID, number, "template_hello_1_test", component);
+  await sendTemplateMessage(BUSINESS_PHONE_NUMBER_ID, waNumber, "template_hello_1_test", component);
 }
 
 // testers.map(async (number) => await sendInitialMessageWithLib(number));

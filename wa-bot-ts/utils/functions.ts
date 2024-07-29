@@ -1,3 +1,5 @@
+import { supabase } from "../supabase";
+
 export function indexToAlphabet(index: number): string {
   if (index < 1 || index > 26) {
     throw new Error("Index must be between 1 and 26");
@@ -13,7 +15,6 @@ export function parseNamesFromInput(
   /** split the input by comas.
    * The correct name inputs would be names separated by commas, like this:
    * Felix Arjuna, Steffen Josua, Aaron Randy
-   *
    */
   const namePairs = input.split(",");
   const names = namePairs.map((pair) => {
@@ -34,4 +35,13 @@ export function parseNamesFromInput(
   }
 
   return { error: { isError: false, message: null }, names };
+}
+
+export async function getRSVPNumber(waNumber: string) {
+  const { data, error } = await supabase.from("guests").select("n_rsvp").eq("wa_number", waNumber);
+  if (error) throw new Error(`Error when fetching the number of RSVP for ${waNumber}.`);
+  const nRSVP = data.at(0)?.n_rsvp;
+  if (nRSVP === undefined)
+    throw new Error(`RSVP number could not be undefined. Context: ${waNumber}`);
+  return nRSVP;
 }

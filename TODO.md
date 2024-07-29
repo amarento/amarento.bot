@@ -20,7 +20,11 @@
 - [x] Goodbye message after "YES"
 - [x] Update initial message template to require user action.
 - [ ] Add header to each message.
-- [ ] Updata database data
+- [ ] Handle database connection
+  - [x] Read data from database
+    - [x] Read all clients
+    - [x] Read number of RSVP
+  - [x] Write and save data to database
 
 ## NICE TO HAVE
 

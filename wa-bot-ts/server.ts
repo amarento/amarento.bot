@@ -3,15 +3,13 @@ import {
   WhatsappNotificationStatusStatus,
   WhatsappNotificationValue,
 } from "@daweto/whatsapp-api-types";
-import { createClient } from "@supabase/supabase-js";
 import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import UserMessageStore from "./model/UserMessageStore";
+import { supabase } from "./supabase";
 import { sendInitialMessageWithTemplate } from "./utils/initial-message";
 import { handleIncomingMessage } from "./utils/message-handler";
-
-dotenv.config();
 
 const app = express();
 app.use(express.json());
@@ -24,8 +22,8 @@ const options: CorsOptions = {
 };
 app.use(cors(options));
 
+dotenv.config();
 const { WEBHOOK_VERIFY_TOKEN, PORT, SUPABASE_URL, SUPABASE_KEY } = process.env;
-const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
 
 app.post("/webhook", async (req: Request, res: Response) => {
   const entry: WhatsappNotificationEntry | undefined = req.body.entry?.[0];
@@ -64,20 +62,17 @@ app.get("/webhook", (req: Request, res: Response) => {
 });
 
 app.get("/", async (req: Request, res: Response) => {
-  const { data, error } = await supabase.from("guests").select();
   res.send("AMARENTO IS THE BEST.");
 });
 
-app.post("/api/send-initial-message", (req: Request, res: Response) => {
-  const testers: string[] = [
-    "4915237363126",
-    "4915901993904",
-    "4917634685672",
-    "4915256917547",
-    "6281231080808",
-  ];
-  testers.map(async (number) => await sendInitialMessageWithTemplate(number));
-  res.status(200).send("OK");
+app.post("/api/send-initial-message", async (req: Request, res: Response) => {
+  const { data: clients, error } = await supabase.from("guests").select();
+  if (error) return res.status(500).send({ success: false, message: error });
+  clients?.map(
+    async (client) =>
+      await sendInitialMessageWithTemplate(client.inv_names, client.wa_number, client.n_rsvp)
+  );
+  res.status(200).send({ success: true, message: null });
 });
 
 app.post("/api/reset-user-state", (req: Request, res: Response) => {

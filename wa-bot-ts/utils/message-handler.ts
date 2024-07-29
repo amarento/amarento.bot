@@ -4,7 +4,8 @@ import {
 } from "@daweto/whatsapp-api-types";
 import UserMessage from "../model/UserMessage";
 import UserMessageStore from "../model/UserMessageStore";
-import { indexToAlphabet, parseNamesFromInput } from "./functions";
+import { supabase } from "../supabase";
+import { getRSVPNumber, indexToAlphabet, parseNamesFromInput } from "./functions";
 import {
   attendanceNamesQuestion,
   goodbyeMessage,
@@ -103,8 +104,8 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       /** QUESTION 2 - How many people would come to holy matrimony? */
       state.setIsAttendHolmat(true);
 
-      const n_rsvp = 3;
-      const buttons: ButtonMessage[] = Array.from({ length: n_rsvp }, (_, i) => ({
+      const nRSVP = await getRSVPNumber(message.from);
+      const buttons: ButtonMessage[] = Array.from({ length: nRSVP }, (_, i) => ({
         type: "reply",
         reply: {
           id: `#reply-guest-holmat-${indexToAlphabet(i + 1)}`,
@@ -114,7 +115,7 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       await sendInteractiveButtonMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
-        numberOfGuestQuestion(n_rsvp, "Holy Matrimony"),
+        numberOfGuestQuestion(nRSVP, "Holy Matrimony"),
         buttons
       );
       await markAsRead(BUSINESS_PHONE_NUMBER_ID, message.id);
@@ -161,7 +162,7 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       /** SUMMARY AND REDO */
       if (message.interactive === undefined) return;
       if (message.interactive?.button_reply.title.toLowerCase() === "tidak") {
-        state.setIsAttendWedcer(false);
+        state.setIsAttendDinner(false);
         const buttons: ButtonMessage[] = [
           {
             type: "reply",
@@ -184,9 +185,9 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
           summaryMessage(
             state.getIsAttendHolmat(),
             state.getNRsvpHolmat(),
-            state.getIsAttendWedcer(),
-            state.getNRsvpWedcer(),
-            state.getWedcerNames().join(", ")
+            state.getIsAttendDinner(),
+            state.getNRsvpDinner(),
+            state.getDinnerNames().join(", ")
           ),
           buttons
         );
@@ -194,9 +195,10 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
         return;
       }
 
-      state.setIsAttendWedcer(true);
-      const n_rsvp = 3;
-      const buttons: ButtonMessage[] = Array.from({ length: n_rsvp }, (_, i) => ({
+      state.setIsAttendDinner(true);
+
+      const nRSVP = await getRSVPNumber(message.from);
+      const buttons: ButtonMessage[] = Array.from({ length: nRSVP }, (_, i) => ({
         type: "reply",
         reply: {
           id: `#reply-guest-wedcer-${indexToAlphabet(i + 1)}`,
@@ -206,7 +208,7 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       await sendInteractiveButtonMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
-        numberOfGuestQuestion(n_rsvp, "Wedding Cerremony"),
+        numberOfGuestQuestion(nRSVP, "Wedding Cerremony"),
         buttons
       );
       await markAsRead(BUSINESS_PHONE_NUMBER_ID, message.id);
@@ -216,7 +218,7 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
     case 4: {
       if (message.interactive === undefined) return;
       const nConfirmGuest = parseInt(message.interactive.button_reply.title);
-      state.setNRsvpWedcer(nConfirmGuest);
+      state.setNRsvpDinner(nConfirmGuest);
       await sendTextMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
@@ -229,21 +231,21 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
     }
     case 5: {
       if (message && message.type === WhatsappNotificationMessageType.Text) {
-        const n_rsvp = 2;
+        const nRSVP = await getRSVPNumber(message.from);
         const body = message.text?.body;
         if (body === undefined) {
           /** REPEAT QUESTION: Please write the name of the attendees  */
           await sendTextMessage(
             BUSINESS_PHONE_NUMBER_ID,
             message.from,
-            attendanceNamesQuestion(n_rsvp),
+            attendanceNamesQuestion(nRSVP),
             message.id
           );
 
           return;
         }
 
-        const names = parseNamesFromInput(body, state.getNRsvpWedcer());
+        const names = parseNamesFromInput(body, state.getNRsvpDinner());
         if (names.error.isError && names.error.message) {
           await markAsRead(BUSINESS_PHONE_NUMBER_ID, message.id);
           await sendTextMessage(
@@ -256,9 +258,8 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
           await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, attendanceNamesQuestion(2));
           return;
         }
-        state.setWedcerNames(names.names);
+        state.setDinnerNames(names.names);
 
-        /** write names to database */
         const buttons: ButtonMessage[] = [
           {
             type: "reply",
@@ -281,9 +282,9 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
           summaryMessage(
             state.getIsAttendHolmat(),
             state.getNRsvpHolmat(),
-            state.getIsAttendWedcer(),
-            state.getNRsvpWedcer(),
-            state.getWedcerNames().join(", ")
+            state.getIsAttendDinner(),
+            state.getNRsvpDinner(),
+            state.getDinnerNames().join(", ")
           ),
           buttons
         );
@@ -297,6 +298,20 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       if (response === "ya") {
         await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, goodbyeMessage);
         state.setNextQuestionId(7);
+
+        /** write response to database */
+        const { error } = await supabase
+          .from("guests")
+          .update({
+            rsvp_holmat: state.getIsAttendHolmat(),
+            act_n_rsvp_holmat: state.getNRsvpHolmat(),
+            rsvp_dinner: state.getIsAttendDinner(),
+            act_n_rsvp_dinner: state.getNRsvpDinner(),
+            names_wedcer: state.getDinnerNames().join(", "),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("wa_number", message.from);
+        if (error) throw new Error(error.message);
         return;
       }
 

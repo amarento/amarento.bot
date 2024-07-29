@@ -2,9 +2,9 @@ interface UserState {
   nextQuestionId: number;
   isAttendHolmat: boolean;
   nRSVPHolMat: number;
-  isAttendWedcer: boolean;
-  nRSVPWedCer: number;
-  wedCerNames: string[];
+  isAttendDinner: boolean;
+  nRSVPDinner: number;
+  dinnerNames: string[];
 }
 
 class UserMessage {
@@ -15,9 +15,9 @@ class UserMessage {
       nextQuestionId: 0,
       isAttendHolmat: false,
       nRSVPHolMat: 0,
-      isAttendWedcer: false,
-      nRSVPWedCer: 0,
-      wedCerNames: [],
+      isAttendDinner: false,
+      nRSVPDinner: 0,
+      dinnerNames: [],
     };
   }
 
@@ -45,28 +45,28 @@ class UserMessage {
     this.state.nRSVPHolMat = n_rsvp_holmat;
   }
 
-  public getIsAttendWedcer(): boolean {
-    return this.state.isAttendWedcer;
+  public getIsAttendDinner(): boolean {
+    return this.state.isAttendDinner;
   }
 
-  public setIsAttendWedcer(isAttend: boolean): void {
-    this.state.isAttendWedcer = isAttend;
+  public setIsAttendDinner(isAttend: boolean): void {
+    this.state.isAttendDinner = isAttend;
   }
 
-  public getNRsvpWedcer(): number {
-    return this.state.nRSVPWedCer;
+  public getNRsvpDinner(): number {
+    return this.state.nRSVPDinner;
   }
 
-  public setNRsvpWedcer(n_rsvp_wedcer: number): void {
-    this.state.nRSVPWedCer = n_rsvp_wedcer;
+  public setNRsvpDinner(n_rsvp_wedcer: number): void {
+    this.state.nRSVPDinner = n_rsvp_wedcer;
   }
 
-  public getWedcerNames(): string[] {
-    return this.state.wedCerNames;
+  public getDinnerNames(): string[] {
+    return this.state.dinnerNames;
   }
 
-  public setWedcerNames(wedcer_names: string[]): void {
-    this.state.wedCerNames = wedcer_names;
+  public setDinnerNames(wedcer_names: string[]): void {
+    this.state.dinnerNames = wedcer_names;
   }
 
   public reset(): void {
@@ -74,9 +74,9 @@ class UserMessage {
       nextQuestionId: 0,
       isAttendHolmat: false,
       nRSVPHolMat: 0,
-      isAttendWedcer: false,
-      nRSVPWedCer: 0,
-      wedCerNames: [],
+      isAttendDinner: false,
+      nRSVPDinner: 0,
+      dinnerNames: [],
     };
   }
 
