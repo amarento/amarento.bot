@@ -59,8 +59,7 @@ export const summaryMessage = (
   n_rsvp_wedcer: number,
   wedCerNames: string
 ) => {
-  const nameText =
-    wedCerNames.length !== 0 ? `Nama orang yang akan hadir: *${wedCerNames.toUpperCase()}*` : "";
+  const nameText = wedCerNames.length !== 0 ? `Nama orang yang akan hadir: *${wedCerNames}*` : "";
 
   return `*Rangkuman/Summary Data*
 

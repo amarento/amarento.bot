@@ -19,7 +19,11 @@ export function parseNamesFromInput(
   const namePairs = input.split(",");
   const names = namePairs.map((pair) => {
     /** trim whitespaces from each name */
-    const names = pair.trim();
+    const names = pair
+      .trim()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
     return names;
   });
 
@@ -38,10 +42,17 @@ export function parseNamesFromInput(
 }
 
 export async function getRSVPNumber(waNumber: string) {
-  const { data, error } = await supabase.from("guests").select("n_rsvp").eq("wa_number", waNumber);
+  const { data, error } = await supabase
+    .from("guests")
+    .select("n_rsvp_plan")
+    .eq("wa_number", waNumber);
   if (error) throw new Error(`Error when fetching the number of RSVP for ${waNumber}.`);
-  const nRSVP = data.at(0)?.n_rsvp;
+  const nRSVP = data.at(0)?.n_rsvp_plan;
   if (nRSVP === undefined)
     throw new Error(`RSVP number could not be undefined. Context: ${waNumber}`);
   return nRSVP;
+}
+
+export function mapToArray<K, V>(map: Map<K, V>): Array<{ key: K; value: V }> {
+  return Array.from(map, ([key, value]) => ({ key, value }));
 }
