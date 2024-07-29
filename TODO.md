@@ -18,7 +18,9 @@
   - [x] Convert summary to interactive message
   - [x] Convert good bye message to text message
 - [x] Goodbye message after "YES"
+- [x] Update initial message template to require user action.
 - [ ] Add header to each message.
+- [ ] Updata database data
 
 ## NICE TO HAVE
 

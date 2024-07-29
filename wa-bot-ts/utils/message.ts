@@ -33,7 +33,7 @@ Pukul: *${wedcerTime}*
 Undangan ini berlaku untuk *${nRSVP}* pax.
 
 Dimohon partisipasinya untuk pengisian rincian undangan dengan cara menjawab pertanyaan-pertanyaan yang akan kami kirimkan melalui percakapan ini. Waktu untuk pengisian kurang lebih 5-10 menit.
-Mohon klik "*YA*" untuk kesediaan Anda untuk berpartisipasi.
+Mohon ketik "*YA*" untuk kesediaan Anda untuk berpartisipasi.
 `;
 };
 
@@ -74,8 +74,8 @@ ${nameText}
 Konfirmasi kembali rangkuman data anda.
 
 Apakah anda ingin melakukan perubahan jawaban untuk RSVP Anda?
-Klik *YA*, jika ingin mengulang.
-Klik *TIDAK*, jika semua data sudah akurat.
+Klik *YA*, jika semua data sudah akurat.
+Klik *TIDAK*, jika ada kesalahan dan Anda ingin mengulang.
 `;
 };
 

@@ -37,11 +37,12 @@ app.post("/webhook", async (req: Request, res: Response) => {
   /** ignore status sent and status read */
   if (
     status?.status === WhatsappNotificationStatusStatus.Sent ||
-    status?.status === WhatsappNotificationStatusStatus.Read
+    status?.status === WhatsappNotificationStatusStatus.Read ||
+    status?.status === WhatsappNotificationStatusStatus.Delivered
   )
     return;
 
-  await handleIncomingMessage(message, status);
+  await handleIncomingMessage(message);
 
   res.sendStatus(200);
 });
@@ -64,25 +65,26 @@ app.get("/webhook", (req: Request, res: Response) => {
 
 app.get("/", async (req: Request, res: Response) => {
   const { data, error } = await supabase.from("guests").select();
-  console.log(data?.[0]);
   res.send("AMARENTO IS THE BEST.");
 });
 
 app.post("/api/send-initial-message", (req: Request, res: Response) => {
-  console.log("Sending initial message.");
-  const testers: string[] = ["4915237363126", "6289612424707"];
+  const testers: string[] = [
+    "4915237363126",
+    "4915901993904",
+    "4917634685672",
+    "4915256917547",
+    "6281231080808",
+  ];
   testers.map(async (number) => await sendInitialMessageWithTemplate(number));
   res.status(200).send("OK");
 });
 
 app.post("/api/reset-user-state", (req: Request, res: Response) => {
-  console.log("Resetting user state.");
-
   res.status(200).send("OK");
 });
 
 app.get("/api/user-state", (req: Request, res: Response) => {
-  console.log("Getting user state.");
   res.status(200).send(JSON.stringify(Object.fromEntries(UserMessageStore.getData())));
 });
 

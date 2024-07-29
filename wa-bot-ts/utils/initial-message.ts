@@ -7,7 +7,6 @@ import {
   sendTemplateMessage,
   TemplateComponent,
 } from "./message-sender";
-import { testers } from "./phone-book";
 dotenv.config({ path: "./../.env" });
 
 const { GRAPH_API_TOKEN, WEBHOOK_VERIFY_TOKEN } = process.env;
@@ -83,7 +82,7 @@ export async function sendInitialMessageWithTemplate(number: string): Promise<vo
     {
       type: "body",
       parameters: [
-        { type: "text", text: "Danny Kurniawan" },
+        { type: "text", text: "Aaron Randy" },
         { type: "text", text: "Ricky & Gloria" },
         { type: "text", text: "Mr. Papa & Mama" },
         { type: "text", text: "Mr. Papi & Mami" },
@@ -110,7 +109,7 @@ export async function sendInitialMessageWithTemplate(number: string): Promise<vo
   await sendTemplateMessage(BUSINESS_PHONE_NUMBER_ID, number, "template_hello_1_test", component);
 }
 
-testers.map(async (number) => await sendInitialMessageWithLib(number));
+// testers.map(async (number) => await sendInitialMessageWithLib(number));
 // numbers.map(async (number) => {
 //   const buttons: ButtonMessage[] = [
 //     {

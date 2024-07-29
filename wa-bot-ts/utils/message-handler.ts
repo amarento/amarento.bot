@@ -1,8 +1,6 @@
 import {
   WhatsappNotificationMessage,
   WhatsappNotificationMessageType,
-  WhatsappNotificationStatus,
-  WhatsappNotificationStatusStatus,
 } from "@daweto/whatsapp-api-types";
 import UserMessage from "../model/UserMessage";
 import UserMessageStore from "../model/UserMessageStore";
@@ -21,24 +19,23 @@ import {
 } from "./message-sender";
 
 const BUSINESS_PHONE_NUMBER_ID: string = "370074172849087";
+const READY_MESSAGE = "siap";
 
-export const handleIncomingMessage = async (
-  message?: WhatsappNotificationMessage,
-  status?: WhatsappNotificationStatus
-) => {
-  if (status && UserMessageStore.get(status.recipient_id) === undefined)
-    UserMessageStore.set(status.recipient_id, new UserMessage());
+export const handleIncomingMessage = async (message?: WhatsappNotificationMessage) => {
+  if (message?.from === undefined) return;
+
   if (message && UserMessageStore.get(message.from) === undefined)
     UserMessageStore.set(message.from, new UserMessage());
 
-  const state = UserMessageStore.get(status?.recipient_id ?? message!.from);
+  const state = UserMessageStore.get(message!.from);
   if (state === undefined) {
     console.error("State is empty.");
     return;
   }
 
   if (
-    status?.status === WhatsappNotificationStatusStatus.Delivered &&
+    message?.type === WhatsappNotificationMessageType.Button &&
+    message.button?.text.toLowerCase() === READY_MESSAGE &&
     state.getNextQuestionId() === 0
   ) {
     const buttons: ButtonMessage[] = [
@@ -60,7 +57,7 @@ export const handleIncomingMessage = async (
     /** QUESTION 1 */
     await sendInteractiveButtonMessage(
       BUSINESS_PHONE_NUMBER_ID,
-      status.recipient_id,
+      message.from,
       "Apakah Anda akan menghadiri acara *Pemberkatan / Holy Matrimony*?",
       buttons
     );
@@ -297,13 +294,13 @@ export const handleIncomingMessage = async (
     case 6: {
       if (message.interactive === undefined) return;
       const response = message.interactive?.button_reply.title.toLowerCase();
-      if (response === "tidak") {
+      if (response === "ya") {
         await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, goodbyeMessage);
         state.setNextQuestionId(7);
         return;
       }
 
-      if (response === "ya") {
+      if (response === "tidak") {
         state.reset();
         const buttons: ButtonMessage[] = [
           {
