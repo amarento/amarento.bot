@@ -1,5 +1,6 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import { Header } from "whatsapp-api-js/messages";
 dotenv.config();
 
 const { GRAPH_API_TOKEN } = process.env;
@@ -101,7 +102,8 @@ export async function sendInteractiveButtonMessage(
   business_phone_number_id: string,
   to: string,
   message: string,
-  buttons: ButtonMessage[]
+  buttons: ButtonMessage[],
+  header?: Header
 ) {
   await axios({
     method: "POST",
@@ -113,18 +115,12 @@ export async function sendInteractiveButtonMessage(
       type: "interactive",
       interactive: {
         type: "button",
-        header: {
-          type: "text",
-          text: "The Wedding of Ricky & Glo",
-        },
+        header: header,
         body: {
           text: message,
         },
         action: {
           buttons: buttons,
-        },
-        footer: {
-          text: "Pesan ini terkirim secara otomatis oleh Amarento.",
         },
       },
     },
@@ -159,9 +155,6 @@ export async function sendInteractiveCTAMessage(
         action: {
           name: "cta_url",
           parameters: parameter,
-        },
-        footer: {
-          text: "Pesan ini terkirim secara otomatis oleh Amarento.",
         },
       },
     },
