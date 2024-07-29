@@ -29,14 +29,16 @@ export type Database = {
       }
       guests: {
         Row: {
-          act_n_rsvp_dinner: number
-          act_n_rsvp_holmat: number
           address: string
           created_at: string
           guest_names: Json | null
           id: number
           inv_names: string
-          n_rsvp: number
+          n_rsvp_dinner_act: number
+          n_rsvp_dinner_wa: number
+          n_rsvp_holmat_act: number
+          n_rsvp_holmat_wa: number
+          n_rsvp_plan: number
           rsvp_afpat: boolean
           rsvp_dinner: boolean
           rsvp_holmat: boolean
@@ -44,14 +46,16 @@ export type Database = {
           wa_number: string
         }
         Insert: {
-          act_n_rsvp_dinner?: number
-          act_n_rsvp_holmat: number
           address: string
           created_at?: string
           guest_names?: Json | null
           id?: number
           inv_names: string
-          n_rsvp: number
+          n_rsvp_dinner_act?: number
+          n_rsvp_dinner_wa?: number
+          n_rsvp_holmat_act: number
+          n_rsvp_holmat_wa?: number
+          n_rsvp_plan: number
           rsvp_afpat?: boolean
           rsvp_dinner?: boolean
           rsvp_holmat?: boolean
@@ -59,14 +63,16 @@ export type Database = {
           wa_number: string
         }
         Update: {
-          act_n_rsvp_dinner?: number
-          act_n_rsvp_holmat?: number
           address?: string
           created_at?: string
           guest_names?: Json | null
           id?: number
           inv_names?: string
-          n_rsvp?: number
+          n_rsvp_dinner_act?: number
+          n_rsvp_dinner_wa?: number
+          n_rsvp_holmat_act?: number
+          n_rsvp_holmat_wa?: number
+          n_rsvp_plan?: number
           rsvp_afpat?: boolean
           rsvp_dinner?: boolean
           rsvp_holmat?: boolean

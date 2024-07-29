@@ -2,6 +2,7 @@ import {
   WhatsappNotificationMessage,
   WhatsappNotificationMessageType,
 } from "@daweto/whatsapp-api-types";
+import { Header } from "whatsapp-api-js/messages";
 import UserMessage from "../model/UserMessage";
 import UserMessageStore from "../model/UserMessageStore";
 import { supabase } from "../supabase";
@@ -286,7 +287,8 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
             state.getNRsvpDinner(),
             state.getDinnerNames().join(", ")
           ),
-          buttons
+          buttons,
+          new Header("The wedding of Ricky & Gloria")
         );
 
         state.setNextQuestionId(6);
@@ -304,10 +306,10 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
           .from("guests")
           .update({
             rsvp_holmat: state.getIsAttendHolmat(),
-            act_n_rsvp_holmat: state.getNRsvpHolmat(),
+            n_rsvp_holmat_wa: state.getNRsvpHolmat(),
             rsvp_dinner: state.getIsAttendDinner(),
-            act_n_rsvp_dinner: state.getNRsvpDinner(),
-            names_wedcer: state.getDinnerNames().join(", "),
+            n_rsvp_dinner_wa: state.getNRsvpDinner(),
+            guest_names: state.getDinnerNames(),
             updated_at: new Date().toISOString(),
           })
           .eq("wa_number", message.from);
