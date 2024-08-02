@@ -72,7 +72,7 @@ ${nameText}
 
 Konfirmasi kembali rangkuman data anda.
 
-Apakah anda ingin melakukan perubahan jawaban untuk RSVP Anda?
+Apakah semua data Anda sudah akurat?
 Klik *YA*, jika semua data sudah akurat.
 Klik *TIDAK*, jika ada kesalahan dan Anda ingin mengulang.
 `;

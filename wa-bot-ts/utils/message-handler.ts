@@ -8,17 +8,17 @@ import UserMessageStore from "../model/UserMessageStore";
 import { supabase } from "../supabase";
 import { getRSVPNumber, indexToAlphabet, parseNamesFromInput } from "./functions";
 import {
-  attendanceNamesQuestion,
-  goodbyeMessage,
-  numberOfGuestQuestion,
-  summaryMessage,
-} from "./message";
-import {
   ButtonMessage,
   markAsRead,
   sendInteractiveButtonMessage,
   sendTextMessage,
 } from "./message-sender";
+import {
+  attendanceNamesQuestion,
+  goodbyeMessage,
+  numberOfGuestQuestion,
+  summaryMessage,
+} from "./message-template";
 
 const BUSINESS_PHONE_NUMBER_ID: string = "370074172849087";
 const READY_MESSAGE = "siap";

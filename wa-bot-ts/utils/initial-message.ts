@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 import { WhatsAppAPI } from "whatsapp-api-js/.";
 import { ActionCTA, Body, Footer, Header, Interactive } from "whatsapp-api-js/messages";
-import { initialMessage } from "./message";
 import {
   sendInteractiveCTAMessage,
   sendTemplateMessage,
   TemplateComponent,
 } from "./message-sender";
+import { initialMessage } from "./message-template";
 dotenv.config({ path: "./../.env" });
 
 const { GRAPH_API_TOKEN, WEBHOOK_VERIFY_TOKEN } = process.env;
