@@ -29,7 +29,9 @@
 
 - [ ] Create QRCode and Barcode
   - [ ] QR-Code to save phone number
-- [ ] Create client table
+- [ ] Clients page
+  - [ ] Create client table
+  - [ ] Create client page to track progress
 
 ## NICE TO HAVE
 
