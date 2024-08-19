@@ -10,7 +10,7 @@ import UserMessage from "./model/UserMessage";
 import UserMessageStore from "./model/UserMessageStore";
 import { supabase } from "./supabase";
 import { mapToArray } from "./utils/functions";
-import { sendInitialMessageWithTemplate } from "./utils/initial-message";
+import { sendInitialMessageWithTemplate, sendReminderMessage } from "./utils/initial-message";
 import { handleIncomingMessage } from "./utils/message-handler";
 
 const app = express();
@@ -25,7 +25,7 @@ const options: CorsOptions = {
 app.use(cors(options));
 
 dotenv.config();
-const { WEBHOOK_VERIFY_TOKEN, PORT, SUPABASE_URL, SUPABASE_KEY } = process.env;
+const { WEBHOOK_VERIFY_TOKEN, PORT } = process.env;
 
 app.post("/webhook", async (req: Request, res: Response) => {
   const entry: WhatsappNotificationEntry | undefined = req.body.entry?.[0];
@@ -67,9 +67,21 @@ app.get("/", async (req: Request, res: Response) => {
   res.send("AMARENTO IS THE BEST.");
 });
 
+app.get("/api/user-state", (req: Request, res: Response) => {
+  const states = UserMessageStore.getData();
+  const response = mapToArray<string, UserMessage>(states);
+  res.status(200).send(response);
+});
+
+app.post("/api/reset-user-state", (req: Request, res: Response) => {
+  res.status(200).send("OK");
+});
+
 app.post("/api/send-initial-message", async (req: Request, res: Response) => {
-  const { data: clients, error } = await supabase.from("guests").select();
+  const { data: clients, error } = await supabase.from("amarento.id_guests").select();
   if (error) return res.status(500).send({ success: false, message: error });
+
+  /** send initial messsage. */
   clients?.map(
     async (client) =>
       await sendInitialMessageWithTemplate(client.inv_names, client.wa_number, client.n_rsvp_plan)
@@ -77,14 +89,16 @@ app.post("/api/send-initial-message", async (req: Request, res: Response) => {
   res.status(200).send({ success: true, message: null });
 });
 
-app.post("/api/reset-user-state", (req: Request, res: Response) => {
-  res.status(200).send("OK");
-});
+app.post("/api/send-reminder", async (req: Request, res: Response) => {
+  const { data: client, error } = await supabase
+    .from("amarento.id_clients")
+    .select(`*, "amarento.id_guests" (*)`)
+    .eq("client_code", "RJGFWB8V")
+    .single();
+  if (error) return res.status(500).send({ success: false, message: error });
 
-app.get("/api/user-state", (req: Request, res: Response) => {
-  const states = UserMessageStore.getData();
-  const response = mapToArray<string, UserMessage>(states);
-  res.status(200).send(response);
+  /** send reminder. */
+  client?.["amarento.id_guests"].map(async (guest) => await sendReminderMessage(client, guest));
 });
 
 app.listen(PORT, () => {
