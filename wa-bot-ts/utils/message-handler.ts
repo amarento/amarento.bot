@@ -1,18 +1,10 @@
-import {
-  WhatsappNotificationMessage,
-  WhatsappNotificationMessageType,
-} from "@daweto/whatsapp-api-types";
+import { WhatsappNotificationMessage, WhatsappNotificationMessageType } from "@daweto/whatsapp-api-types";
 import { Header } from "whatsapp-api-js/messages";
 import UserMessage from "../model/UserMessage";
 import UserMessageStore from "../model/UserMessageStore";
 import { supabase } from "../supabase";
 import { getRSVPNumber, indexToAlphabet, parseNamesFromInput } from "./functions";
-import {
-  ButtonMessage,
-  markAsRead,
-  sendInteractiveButtonMessage,
-  sendTextMessage,
-} from "./message-sender";
+import { ButtonMessage, markAsRead, sendInteractiveButtonMessage, sendTextMessage } from "./message-sender";
 import {
   attendanceNamesQuestion,
   goodbyeMessage,
@@ -249,12 +241,7 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
         const names = parseNamesFromInput(body, state.getNRsvpDinner());
         if (names.error.isError && names.error.message) {
           await markAsRead(BUSINESS_PHONE_NUMBER_ID, message.id);
-          await sendTextMessage(
-            BUSINESS_PHONE_NUMBER_ID,
-            message.from,
-            names.error.message,
-            message.id
-          );
+          await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, names.error.message, message.id);
           /** REPEAT QUESTION: Please write the name of the attendees  */
           await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, attendanceNamesQuestion(2));
           return;
@@ -303,13 +290,13 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
 
         /** write response to database */
         const { error } = await supabase
-          .from("guests")
+          .from("amarento.id_guests")
           .update({
             rsvp_holmat: state.getIsAttendHolmat(),
             n_rsvp_holmat_wa: state.getNRsvpHolmat(),
             rsvp_dinner: state.getIsAttendDinner(),
             n_rsvp_dinner_wa: state.getNRsvpDinner(),
-            guest_names: state.getDinnerNames(),
+            guest_names: state.getDinnerNames().toString(),
             updated_at: new Date().toISOString(),
           })
           .eq("wa_number", message.from);
@@ -336,11 +323,7 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
           },
         ];
 
-        await sendTextMessage(
-          BUSINESS_PHONE_NUMBER_ID,
-          message.from,
-          "Data Anda telah kami reset! 🐓"
-        );
+        await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, "Data Anda telah kami reset! 🐓");
 
         /** QUESTION 1 */
         state.setNextQuestionId(1);

@@ -43,13 +43,13 @@ export function parseNamesFromInput(
 
 export async function getRSVPNumber(waNumber: string) {
   const { data, error } = await supabase
-    .from("guests")
+    .from("amarento.id_guests")
     .select("n_rsvp_plan")
     .eq("wa_number", waNumber);
   if (error) throw new Error(`Error when fetching the number of RSVP for ${waNumber}.`);
+
   const nRSVP = data.at(0)?.n_rsvp_plan;
-  if (nRSVP === undefined)
-    throw new Error(`RSVP number could not be undefined. Context: ${waNumber}`);
+  if (nRSVP === undefined) throw new Error(`RSVP number could not be undefined. Context: ${waNumber}`);
   return nRSVP;
 }
 

@@ -1,12 +1,9 @@
 import dotenv from "dotenv";
 import { WhatsAppAPI } from "whatsapp-api-js/.";
-import { ActionCTA, Body, Footer, Header, Interactive } from "whatsapp-api-js/messages";
-import {
-  sendInteractiveCTAMessage,
-  sendTemplateMessage,
-  TemplateComponent,
-} from "./message-sender";
-import { initialMessage } from "./message-template";
+import { ActionCTA, Body, Footer, Header, Interactive, Text } from "whatsapp-api-js/messages";
+import { Tables } from "../database.types";
+import { sendInteractiveCTAMessage, sendTemplateMessage, TemplateComponent } from "./message-sender";
+import { initialMessage, reminderMessage } from "./message-template";
 dotenv.config({ path: "./../.env" });
 
 const { GRAPH_API_TOKEN, WEBHOOK_VERIFY_TOKEN } = process.env;
@@ -68,11 +65,7 @@ async function sendInitialMessage(number: string) {
   );
 }
 
-export async function sendInitialMessageWithTemplate(
-  name: string,
-  waNumber: string,
-  nRSVP: number
-): Promise<void> {
+export async function sendInitialMessageWithTemplate(name: string, waNumber: string, nRSVP: number): Promise<void> {
   const component: TemplateComponent[] = [
     {
       type: "header",
@@ -113,28 +106,21 @@ export async function sendInitialMessageWithTemplate(
   await sendTemplateMessage(BUSINESS_PHONE_NUMBER_ID, waNumber, "template_hello_1_test", component);
 }
 
-// testers.map(async (number) => await sendInitialMessageWithLib(number));
-// numbers.map(async (number) => {
-//   const buttons: ButtonMessage[] = [
-//     {
-//       type: "reply",
-//       reply: {
-//         id: `#reply-reset-1`,
-//         title: "YA",
-//       },
-//     },
-//     {
-//       type: "reply",
-//       reply: {
-//         id: `#reply-reset-2`,
-//         title: "TIDAK",
-//       },
-//     },
-//   ];
-//   await sendInteractiveMessage(
-//     BUSINESS_PHONE_NUMBER_ID,
-//     number,
-//     summaryMessage(false, 0, false, 0, ""),
-//     buttons
-//   );
-// });
+export async function sendReminderMessage(client: Tables<"amarento.id_clients">, guest: Tables<"amarento.id_guests">) {
+  const message = new Text(
+    reminderMessage(
+      guest.inv_names,
+      `${client.name_bride} and ${client.name_groom}`,
+      client.parents_name_bride ?? "",
+      client.parents_name_groom ?? "",
+      client.wedding_day ?? "",
+      client.holmat_location ?? "",
+      client.holmat_time ?? "",
+      client.dinner_location ?? "",
+      client.dinner_time ?? "",
+      guest.n_rsvp_plan
+    )
+  );
+
+  await Whatsapp.sendMessage(BUSINESS_PHONE_NUMBER_ID, guest.wa_number, message);
+}
