@@ -10,7 +10,11 @@ import UserMessage from "./model/UserMessage";
 import UserMessageStore from "./model/UserMessageStore";
 import { supabase } from "./supabase";
 import { mapToArray } from "./utils/functions";
-import { sendInitialMessageWithTemplate, sendReminderMessage } from "./utils/initial-message";
+import {
+  sendInitialMessageWithTemplate,
+  sendReminderMessage,
+  sendReminderWithQRCode,
+} from "./utils/initial-message";
 import { handleIncomingMessage } from "./utils/message-handler";
 
 const app = express();
@@ -99,6 +103,25 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
 
   /** send reminder. */
   client?.["amarento.id_guests"].map(async (guest) => await sendReminderMessage(client, guest));
+
+  /** send response. */
+  res.status(200).send({ success: true, message: null });
+});
+
+app.post("/api/send-reminder-with-qr", async (req: Request, res: Response) => {
+  console.log("send qr", req.body);
+  const { data: client, error } = await supabase
+    .from("amarento.id_clients")
+    .select(`*, "amarento.id_guests" (*)`)
+    .eq("client_code", "RJGFWB8V")
+    .single();
+  if (error) return res.status(500).send({ success: false, message: error });
+
+  /** send reminder. */
+  client?.["amarento.id_guests"].map(async (guest) => await sendReminderWithQRCode(client, guest));
+
+  /** send response. */
+  res.status(200).send({ success: true, message: null });
 });
 
 app.listen(PORT, () => {

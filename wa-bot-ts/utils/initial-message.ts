@@ -1,8 +1,14 @@
 import dotenv from "dotenv";
+import qrcode from "qrcode";
 import { WhatsAppAPI } from "whatsapp-api-js/.";
 import { ActionCTA, Body, Footer, Header, Interactive, Text } from "whatsapp-api-js/messages";
 import { Tables } from "../database.types";
-import { sendInteractiveCTAMessage, sendTemplateMessage, TemplateComponent } from "./message-sender";
+import {
+  sendInteractiveCTAMessage,
+  sendTemplateMessage,
+  TemplateComponent,
+  uploadMedia,
+} from "./message-sender";
 import { initialMessage, reminderMessage } from "./message-template";
 dotenv.config({ path: "./../.env" });
 
@@ -65,7 +71,11 @@ async function sendInitialMessage(number: string) {
   );
 }
 
-export async function sendInitialMessageWithTemplate(name: string, waNumber: string, nRSVP: number): Promise<void> {
+export async function sendInitialMessageWithTemplate(
+  name: string,
+  waNumber: string,
+  nRSVP: number
+): Promise<void> {
   const component: TemplateComponent[] = [
     {
       type: "header",
@@ -106,7 +116,10 @@ export async function sendInitialMessageWithTemplate(name: string, waNumber: str
   await sendTemplateMessage(BUSINESS_PHONE_NUMBER_ID, waNumber, "template_hello_1_test", component);
 }
 
-export async function sendReminderMessage(client: Tables<"amarento.id_clients">, guest: Tables<"amarento.id_guests">) {
+export async function sendReminderMessage(
+  client: Tables<"amarento.id_clients">,
+  guest: Tables<"amarento.id_guests">
+) {
   const message = new Text(
     reminderMessage(
       guest.inv_names,
@@ -123,4 +136,26 @@ export async function sendReminderMessage(client: Tables<"amarento.id_clients">,
   );
 
   await Whatsapp.sendMessage(BUSINESS_PHONE_NUMBER_ID, guest.wa_number, message);
+}
+
+export async function sendReminderWithQRCode(
+  client: Tables<"amarento.id_clients">,
+  guest: Tables<"amarento.id_guests">
+) {
+  /** send qr code. */
+  const url = `https://amarento.id/clients/${client.client_code}`;
+  const file = `./qrcode_${client.client_code}_${guest.client_id}.png`;
+  await qrcode.toFile(file, url, {
+    errorCorrectionLevel: "H",
+    type: "png",
+  });
+
+  await uploadMedia(BUSINESS_PHONE_NUMBER_ID, file);
+  // const message = new Image("2877344189069925", true);
+  // const response = await Whatsapp.sendMessage(BUSINESS_PHONE_NUMBER_ID, guest.wa_number, message);
+  // console.log(response);
+
+  /** send reminder message.  */
+  // console.log("sending message");
+  // await sendReminderMessage(client, guest);
 }

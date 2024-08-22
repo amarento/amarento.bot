@@ -173,3 +173,30 @@ export async function markAsRead(business_phone_number_id: string, messageId: st
     },
   });
 }
+
+/** upload media to whatsapp api.
+ * see: https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media/
+ */
+export async function uploadMedia(business_phone_number_id: string, file: string) {
+  try {
+    const form = new FormData();
+    form.append("file", file);
+
+    const response = await axios({
+      method: "POST",
+      url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/media`,
+      headers: headers,
+      data: {
+        file: "helloworld",
+        type: "text/plain",
+        messaging_product: "whatsapp",
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    console.error(
+      `Failed to upload media. Error:`,
+      (error as any).response ? (error as any).response.data : (error as Error).message
+    );
+  }
+}
