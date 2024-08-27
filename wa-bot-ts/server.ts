@@ -6,14 +6,16 @@ import {
 import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
+import { ZodError } from "zod";
+import { SendReminderWithQRSchema } from "./model/schema";
 import UserMessage from "./model/UserMessage";
 import UserMessageStore from "./model/UserMessageStore";
 import { supabase } from "./supabase";
-import { mapToArray } from "./utils/functions";
+import { logWithTimestamp, mapToArray } from "./utils/functions";
 import {
   sendInitialMessageWithTemplate,
   sendReminderMessage,
-  sendReminderWithQRCode,
+  sendReminderWithQRCodeTemplate,
 } from "./utils/initial-message";
 import { handleIncomingMessage } from "./utils/message-handler";
 
@@ -33,7 +35,8 @@ const { WEBHOOK_VERIFY_TOKEN, PORT } = process.env;
 
 app.post("/webhook", async (req: Request, res: Response) => {
   const entry: WhatsappNotificationEntry | undefined = req.body.entry?.[0];
-  const value: WhatsappNotificationValue | undefined = entry?.changes?.[0].value;
+  const value: WhatsappNotificationValue | undefined =
+    entry?.changes?.[0].value;
 
   const message = value?.messages?.[0];
   const status = value?.statuses?.at(0);
@@ -82,13 +85,19 @@ app.post("/api/reset-user-state", (req: Request, res: Response) => {
 });
 
 app.post("/api/send-initial-message", async (req: Request, res: Response) => {
-  const { data: clients, error } = await supabase.from("amarento.id_guests").select();
+  const { data: clients, error } = await supabase
+    .from("amarento.id_guests")
+    .select();
   if (error) return res.status(500).send({ success: false, message: error });
 
   /** send initial messsage. */
   clients?.map(
     async (client) =>
-      await sendInitialMessageWithTemplate(client.inv_names, client.wa_number, client.n_rsvp_plan)
+      await sendInitialMessageWithTemplate(
+        client.inv_names,
+        client.wa_number,
+        client.n_rsvp_plan
+      )
   );
   res.status(200).send({ success: true, message: null });
 });
@@ -102,26 +111,48 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
   if (error) return res.status(500).send({ success: false, message: error });
 
   /** send reminder. */
-  client?.["amarento.id_guests"].map(async (guest) => await sendReminderMessage(client, guest));
+  client?.["amarento.id_guests"].map(
+    async (guest) => await sendReminderMessage(client, guest)
+  );
 
   /** send response. */
   res.status(200).send({ success: true, message: null });
 });
 
 app.post("/api/send-reminder-with-qr", async (req: Request, res: Response) => {
-  console.log("send qr", req.body);
-  const { data: client, error } = await supabase
-    .from("amarento.id_clients")
-    .select(`*, "amarento.id_guests" (*)`)
-    .eq("client_code", "RJGFWB8V")
-    .single();
-  if (error) return res.status(500).send({ success: false, message: error });
+  try {
+    const request = SendReminderWithQRSchema.parse(req.body);
+    const { data: client, error } = await supabase
+      .from("amarento.id_clients")
+      .select(`*, "amarento.id_guests" (*)`)
+      .eq("client_code", request.code)
+      .single();
+    if (error) return res.status(500).send({ success: false, message: error });
 
-  /** send reminder. */
-  client?.["amarento.id_guests"].map(async (guest) => await sendReminderWithQRCode(client, guest));
+    /** send reminder. */
+    logWithTimestamp(
+      `Sending reminder to ${client["amarento.id_guests"].length} guests.`
+    );
+    // client?.["amarento.id_guests"].map(
+    //   async (guest) => await sendReminderWithQRCodeTemplate(client, guest)
+    // );
+    logWithTimestamp("Reminder sent successfully.");
 
-  /** send response. */
-  res.status(200).send({ success: true, message: null });
+    const test = client?.["amarento.id_guests"].filter((x) =>
+      x.wa_number.includes("4915237363126")
+    );
+    await sendReminderWithQRCodeTemplate(client, test.at(0)!);
+
+    /** send response. */
+    res.status(200).send({ success: true, message: null });
+  } catch (error) {
+    if (error instanceof ZodError)
+      res.status(400).json({ success: false, errors: error.errors });
+    else
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+  }
 });
 
 app.listen(PORT, () => {

@@ -1,5 +1,7 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import FormData from "form-data";
+import fs from "fs";
 import { Header } from "whatsapp-api-js/messages";
 dotenv.config();
 
@@ -24,7 +26,7 @@ export type CTAParameter = {
   url: string;
 };
 
-export type TemplateComponent = {
+export type TemplateComponentt = {
   type: string;
   parameters: { type: string; text: string }[];
   sub_type?: string;
@@ -36,7 +38,7 @@ export async function sendTemplateMessage(
   business_phone_number_id: string,
   to: string,
   templateName: string,
-  components?: TemplateComponent[]
+  components?: TemplateComponentt[]
 ) {
   try {
     await axios.post(
@@ -179,19 +181,23 @@ export async function markAsRead(business_phone_number_id: string, messageId: st
  */
 export async function uploadMedia(business_phone_number_id: string, file: string) {
   try {
-    const form = new FormData();
-    form.append("file", file);
+    const data = new FormData();
+    data.append("file", fs.createReadStream(file));
+    data.append("type", "image/png");
+    data.append("messaging_product", "whatsapp");
 
-    const response = await axios({
-      method: "POST",
-      url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/media`,
-      headers: headers,
-      data: {
-        file: "helloworld",
-        type: "text/plain",
-        messaging_product: "whatsapp",
-      },
-    });
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${business_phone_number_id}/media`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${GRAPH_API_TOKEN}`,
+          ...data.getHeaders(),
+        },
+      }
+    );
+
+    return response.data.id;
   } catch (error) {
     console.log(error);
     console.error(

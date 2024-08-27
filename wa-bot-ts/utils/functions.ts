@@ -1,3 +1,6 @@
+import fs from "fs";
+import { DateTime } from "luxon";
+import path from "path";
 import { supabase } from "../supabase";
 
 export function indexToAlphabet(index: number): string {
@@ -46,13 +49,39 @@ export async function getRSVPNumber(waNumber: string) {
     .from("amarento.id_guests")
     .select("n_rsvp_plan")
     .eq("wa_number", waNumber);
-  if (error) throw new Error(`Error when fetching the number of RSVP for ${waNumber}.`);
+  if (error)
+    throw new Error(`Error when fetching the number of RSVP for ${waNumber}.`);
 
   const nRSVP = data.at(0)?.n_rsvp_plan;
-  if (nRSVP === undefined) throw new Error(`RSVP number could not be undefined. Context: ${waNumber}`);
+  if (nRSVP === undefined)
+    throw new Error(`RSVP number could not be undefined. Context: ${waNumber}`);
   return nRSVP;
 }
 
 export function mapToArray<K, V>(map: Map<K, V>): Array<{ key: K; value: V }> {
   return Array.from(map, ([key, value]) => ({ key, value }));
+}
+
+/** method to combine first names. used in reminder message. */
+export function combineNames(groom: string, bride: string): string {
+  /** method to extract first name. */
+  function getFirstName(name: string): string {
+    const parts = name.trim().split(" ");
+    return parts.length > 1 ? parts[0] : name;
+  }
+
+  return `${getFirstName(groom)} and ${getFirstName(bride)}`;
+}
+
+/** method to log message with timestamp. */
+export function logWithTimestamp(message: string): void {
+  const timestamp = DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss");
+
+  console.log(`[${timestamp}] ${message}`);
+}
+
+/** method to validate path existence. */
+export function pathExist(filePath: string): void {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }

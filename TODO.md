@@ -25,10 +25,14 @@
     - [x] Read number of RSVP
   - [x] Write and save data to database
 
-## 29.07.2024 - 02.08.2024
+## Webhook server
 
-- [ ] Create QRCode and Barcode
-  - [ ] QR-Code to save phone number
+- [ ] Reminder and QR Code
+
+  - [ ] Create endpoint to send reminder message.
+  - [ ] Create endpoint to send reminder with qr.
+    - [ ] Push image to whatsapp api
+
 - [ ] Clients page
   - [ ] Create client table
   - [ ] Create client page to track progress

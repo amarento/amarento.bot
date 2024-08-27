@@ -1,12 +1,28 @@
 import dotenv from "dotenv";
 import qrcode from "qrcode";
 import { WhatsAppAPI } from "whatsapp-api-js/.";
-import { ActionCTA, Body, Footer, Header, Interactive, Text } from "whatsapp-api-js/messages";
+import {
+  ActionCTA,
+  Body,
+  BodyComponent,
+  BodyParameter,
+  DateTime,
+  Footer,
+  Header,
+  HeaderComponent,
+  HeaderParameter,
+  Image,
+  Interactive,
+  Language,
+  Template,
+  Text,
+} from "whatsapp-api-js/messages";
 import { Tables } from "../database.types";
+import { combineNames, logWithTimestamp, pathExist } from "./functions";
 import {
   sendInteractiveCTAMessage,
   sendTemplateMessage,
-  TemplateComponent,
+  TemplateComponentt,
   uploadMedia,
 } from "./message-sender";
 import { initialMessage, reminderMessage } from "./message-template";
@@ -48,7 +64,11 @@ async function sendInitialMessageWithLib(number: string): Promise<void> {
     new Header("The wedding of Ricky & Gloria"),
     new Footer("Pesan ini terkirim secara otomatis oleh Amarento.")
   );
-  await Whatsapp.sendMessage(BUSINESS_PHONE_NUMBER_ID, number, interactive_catalog_message);
+  await Whatsapp.sendMessage(
+    BUSINESS_PHONE_NUMBER_ID,
+    number,
+    interactive_catalog_message
+  );
 }
 
 async function sendInitialMessage(number: string) {
@@ -76,7 +96,7 @@ export async function sendInitialMessageWithTemplate(
   waNumber: string,
   nRSVP: number
 ): Promise<void> {
-  const component: TemplateComponent[] = [
+  const component: TemplateComponentt[] = [
     {
       type: "header",
       parameters: [
@@ -113,7 +133,12 @@ export async function sendInitialMessageWithTemplate(
       ],
     },
   ];
-  await sendTemplateMessage(BUSINESS_PHONE_NUMBER_ID, waNumber, "template_hello_1_test", component);
+  await sendTemplateMessage(
+    BUSINESS_PHONE_NUMBER_ID,
+    waNumber,
+    "template_hello_1_test",
+    component
+  );
 }
 
 export async function sendReminderMessage(
@@ -124,8 +149,8 @@ export async function sendReminderMessage(
     reminderMessage(
       guest.inv_names,
       `${client.name_bride} and ${client.name_groom}`,
-      client.parents_name_bride ?? "",
       client.parents_name_groom ?? "",
+      client.parents_name_bride ?? "",
       client.wedding_day ?? "",
       client.holmat_location ?? "",
       client.holmat_time ?? "",
@@ -135,27 +160,79 @@ export async function sendReminderMessage(
     )
   );
 
-  await Whatsapp.sendMessage(BUSINESS_PHONE_NUMBER_ID, guest.wa_number, message);
+  await Whatsapp.sendMessage(
+    BUSINESS_PHONE_NUMBER_ID,
+    guest.wa_number,
+    message
+  );
 }
 
-export async function sendReminderWithQRCode(
+// export async function sendReminderWithQRCode(
+//   client: Tables<"amarento.id_clients">,
+//   guest: Tables<"amarento.id_guests">
+// ) {
+//   /** send qr code. */
+//   const url = `https://amarento.id/clients/${client.client_code}`;
+//   const file = `./qrcode_${client.client_code}_${guest.client_id}.png`;
+//   await qrcode.toFile(file, url, {
+//     errorCorrectionLevel: "H",
+//     type: "png",
+//   });
+
+//   const id = await uploadMedia(BUSINESS_PHONE_NUMBER_ID, file);
+//   console.log(`sending image to ${guest.wa_number} with id ${id}`);
+//   const message = new Image(id, true);
+//   const response = await Whatsapp.sendMessage(BUSINESS_PHONE_NUMBER_ID, guest.wa_number, message);
+//   console.log(response);
+
+//   /** send reminder message.  */
+//   console.log("sending message");
+//   await sendReminderMessage(client, guest);
+// }
+
+export async function sendReminderWithQRCodeTemplate(
   client: Tables<"amarento.id_clients">,
   guest: Tables<"amarento.id_guests">
 ) {
-  /** send qr code. */
-  const url = `https://amarento.id/clients/${client.client_code}`;
-  const file = `./qrcode_${client.client_code}_${guest.client_id}.png`;
+  /** create qr code */
+  logWithTimestamp(`Creating QR code for guest with id ${guest.id}`);
+  const url = `https://amarento.id/clients/${client.client_code}/${guest.id}`;
+  const file = `./codes/qr-${client.client_code}-${guest.id}.png`;
+  pathExist(file);
+
   await qrcode.toFile(file, url, {
     errorCorrectionLevel: "H",
     type: "png",
   });
+  const id = await uploadMedia(BUSINESS_PHONE_NUMBER_ID, file);
 
-  await uploadMedia(BUSINESS_PHONE_NUMBER_ID, file);
-  // const message = new Image("2877344189069925", true);
-  // const response = await Whatsapp.sendMessage(BUSINESS_PHONE_NUMBER_ID, guest.wa_number, message);
-  // console.log(response);
+  /** send message template. */
+  const message = new Template(
+    "amarento_reminder",
+    new Language("id"),
+    new HeaderComponent(new HeaderParameter(new Image(id, true))),
+    new BodyComponent(
+      new BodyParameter(guest.inv_names),
+      new BodyParameter(`${client.name_groom} and ${client.name_bride}`),
+      new BodyParameter(client.parents_name_groom ?? ""),
+      new BodyParameter(client.parents_name_bride ?? ""),
+      new BodyParameter(client.holmat_location ?? ""),
+      new BodyParameter(new DateTime(client.holmat_time ?? "")),
+      new BodyParameter(client.dinner_location ?? ""),
+      new BodyParameter(new DateTime(client.dinner_time ?? "")),
+      new BodyParameter(guest.n_rsvp_plan.toString()),
+      new BodyParameter(
+        combineNames(client.name_groom ?? "", client.name_bride ?? "")
+      )
+    )
+  );
 
-  /** send reminder message.  */
-  // console.log("sending message");
-  // await sendReminderMessage(client, guest);
+  const response = await Whatsapp.sendMessage(
+    BUSINESS_PHONE_NUMBER_ID,
+    guest.wa_number,
+    message
+  );
+  logWithTimestamp(
+    `Reminder message sent with response. ${JSON.stringify(response)}`
+  );
 }
