@@ -6,14 +6,16 @@ import {
 import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
+import { WhatsAppAPI } from "whatsapp-api-js/.";
+import { ServerMessage } from "whatsapp-api-js/types";
 import { ZodError } from "zod";
-import { handleIncomingMessage } from "./lib/message-handler";
-import {
-  sendInitialMessageWithTemplate,
-  sendReminderWithQRCodeTemplate,
-} from "./lib/message-sender";
+
+import { Amarento } from "./lib/amarento";
 import { logWithTimestamp, mapToArray } from "./lib/utils";
-import { SendReminderWithQRSchema } from "./model/schema";
+import {
+  SendMessageRequestSchema,
+  SendReminderRequestSchema,
+} from "./model/schema";
 import UserMessage from "./model/UserMessage";
 import UserMessageStore from "./model/UserMessageStore";
 import { supabase } from "./supabase";
@@ -30,17 +32,43 @@ const options: CorsOptions = {
 app.use(cors(options));
 
 dotenv.config();
-const { WEBHOOK_VERIFY_TOKEN, PORT } = process.env;
+const {
+  WEBHOOK_VERIFY_TOKEN,
+  PORT,
+  BUSINESS_PHONE_NUMBER_ID,
+  GRAPH_API_TOKEN,
+} = process.env;
 
+if (BUSINESS_PHONE_NUMBER_ID === undefined) {
+  console.error("BUSINESS_PHONE_NUMBER_ID not defined.");
+  process.exit(1);
+}
+
+if (GRAPH_API_TOKEN === undefined) {
+  console.error("GRAPH_API_TOKEN not defined.");
+  process.exit(1);
+}
+
+app.get("/", async (req: Request, res: Response) => {
+  res.send("AMARENTO IS THE BEST.");
+});
+
+const api = new WhatsAppAPI({
+  token: GRAPH_API_TOKEN,
+  appSecret: "TEST",
+  webhookVerifyToken: WEBHOOK_VERIFY_TOKEN,
+  secure: true,
+  v: "v20.0",
+});
+
+const amarento = new Amarento(BUSINESS_PHONE_NUMBER_ID, api);
 app.post("/webhook", async (req: Request, res: Response) => {
   const entry: WhatsappNotificationEntry | undefined = req.body.entry?.[0];
   const value: WhatsappNotificationValue | undefined =
     entry?.changes?.[0].value;
 
-  const message = value?.messages?.[0];
-  const status = value?.statuses?.at(0);
-
   /** ignore status sent and status read */
+  const status = value?.statuses?.at(0);
   if (
     status?.status === WhatsappNotificationStatusStatus.Sent ||
     status?.status === WhatsappNotificationStatusStatus.Read ||
@@ -48,18 +76,16 @@ app.post("/webhook", async (req: Request, res: Response) => {
   )
     return;
 
-  await handleIncomingMessage(message);
+  const message = value?.messages?.[0] as ServerMessage;
+  await amarento.onMessage(message);
 
   res.sendStatus(200);
 });
 
 app.get("/webhook", (req: Request, res: Response) => {
-  console.log("webhook request incoming!");
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
-
-  console.log(mode, token, challenge);
 
   if (mode === "subscribe" && token === WEBHOOK_VERIFY_TOKEN) {
     res.status(200).send(challenge);
@@ -69,58 +95,87 @@ app.get("/webhook", (req: Request, res: Response) => {
   }
 });
 
-app.get("/", async (req: Request, res: Response) => {
-  res.send("AMARENTO IS THE BEST.");
-});
-
-app.get("/api/user-state", (req: Request, res: Response) => {
+app.get("/api/user-state", (_: Request, res: Response) => {
   const states = UserMessageStore.getData();
   const response = mapToArray<string, UserMessage>(states);
-  res.status(200).send(response);
+  res.status(200).send({ success: true, data: response });
 });
 
-app.post("/api/reset-user-state", (req: Request, res: Response) => {
-  res.status(200).send("OK");
+app.post("/api/reset-user-state", (_: Request, res: Response) => {
+  UserMessageStore.clear();
+  res.status(200).send({
+    success: true,
+    message: "WA RSVP from all guests was cleared out successfully.",
+  });
 });
 
 app.post("/api/send-initial-message", async (req: Request, res: Response) => {
-  const { data: clients, error } = await supabase
-    .from("amarento.id_guests")
-    .select();
-  if (error) return res.status(500).send({ success: false, message: error });
+  try {
+    /** client code. */
+    const request = SendMessageRequestSchema.parse(req.body);
 
-  /** send initial messsage. */
-  clients?.map(
-    async (client) =>
-      await sendInitialMessageWithTemplate(
-        client.inv_names,
-        client.wa_number,
-        client.n_rsvp_plan
-      )
-  );
-  res.status(200).send({ success: true, message: null });
+    const { data: client, error } = await supabase
+      .from("amarento.id_clients")
+      .select(`*, "amarento.id_guests" (*)`)
+      .eq("client_code", request.code)
+      .single();
+    if (error) return res.status(500).send({ success: false, message: error });
+
+    /** send initial messsage. */
+    client?.["amarento.id_guests"].map(
+      async (guest) => await amarento.sendInitialMessage(client, guest)
+    );
+    logWithTimestamp("Initial message sent successfully.");
+
+    res.status(200).send({ success: true, message: null });
+  } catch (error) {
+    if (error instanceof ZodError)
+      res.status(400).json({ success: false, errors: error.errors });
+    else
+      res.status(500).json({
+        success: false,
+        message: "Error occurs when sending initial message.",
+      });
+  }
 });
 
 app.post("/api/send-reminder", async (req: Request, res: Response) => {
-  const { data: client, error } = await supabase
-    .from("amarento.id_clients")
-    .select(`*, "amarento.id_guests" (*)`)
-    .eq("client_code", "RJGFWB8V")
-    .single();
-  if (error) return res.status(500).send({ success: false, message: error });
+  try {
+    const request = SendReminderRequestSchema.parse(req.body);
+    const { data: client, error } = await supabase
+      .from("amarento.id_clients")
+      .select(`*, "amarento.id_guests" (*)`)
+      .eq("client_code", request.code)
+      .single();
+    if (error) return res.status(500).send({ success: false, message: error });
 
-  /** send reminder. */
-  client?.["amarento.id_guests"].map(
-    async (guest) => await sendReminderWithQRCodeTemplate(client, guest)
-  );
+    /** filter guests and send reminder. */
+    const guests = client["amarento.id_guests"].filter(
+      (guest) => guest.rsvp_dinner && guest.rsvp_holmat
+    );
+    logWithTimestamp(`Sending reminder to ${guests.length} guests.`);
+    guests.map(
+      async (guest) =>
+        await amarento.sendReminder(client, guest, request.sendQR)
+    );
+    logWithTimestamp("Reminder sent successfully.");
 
-  /** send response. */
-  res.status(200).send({ success: true, message: null });
+    /** send response. */
+    res.status(200).send({ success: true, message: null });
+  } catch (error) {
+    if (error instanceof ZodError)
+      res.status(400).json({ success: false, errors: error.errors });
+    else
+      res.status(500).json({
+        success: false,
+        message: "Error occurs when sending reminder with QR.",
+      });
+  }
 });
 
-app.post("/api/send-reminder-with-qr", async (req: Request, res: Response) => {
+app.post("/api/send-reminder", async (req: Request, res: Response) => {
   try {
-    const request = SendReminderWithQRSchema.parse(req.body);
+    const request = SendMessageRequestSchema.parse(req.body);
     const { data: client, error } = await supabase
       .from("amarento.id_clients")
       .select(`*, "amarento.id_guests" (*)`)
@@ -129,18 +184,9 @@ app.post("/api/send-reminder-with-qr", async (req: Request, res: Response) => {
     if (error) return res.status(500).send({ success: false, message: error });
 
     /** send reminder. */
-    logWithTimestamp(
-      `Sending reminder to ${client["amarento.id_guests"].length} guests.`
+    client?.["amarento.id_guests"].map(
+      async (guest) => await amarento.sendReminder(client, guest)
     );
-    // client?.["amarento.id_guests"].map(
-    //   async (guest) => await sendReminderWithQRCodeTemplate(client, guest)
-    // );
-    logWithTimestamp("Reminder sent successfully.");
-
-    const test = client?.["amarento.id_guests"].filter((x) =>
-      x.wa_number.includes("4915237363126")
-    );
-    await sendReminderWithQRCodeTemplate(client, test.at(0)!);
 
     /** send response. */
     res.status(200).send({ success: true, message: null });
@@ -148,9 +194,10 @@ app.post("/api/send-reminder-with-qr", async (req: Request, res: Response) => {
     if (error instanceof ZodError)
       res.status(400).json({ success: false, errors: error.errors });
     else
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+      res.status(500).json({
+        success: false,
+        message: "Error occurs when sending reminder.",
+      });
   }
 });
 
