@@ -1,21 +1,31 @@
-import { WhatsappNotificationMessage, WhatsappNotificationMessageType } from "@daweto/whatsapp-api-types";
+import {
+  WhatsappNotificationMessage,
+  WhatsappNotificationMessageType,
+} from "@daweto/whatsapp-api-types";
 import { Header } from "whatsapp-api-js/messages";
 import UserMessage from "../model/UserMessage";
 import UserMessageStore from "../model/UserMessageStore";
 import { supabase } from "../supabase";
-import { getRSVPNumber, indexToAlphabet, parseNamesFromInput } from "./functions";
-import { ButtonMessage, markAsRead, sendInteractiveButtonMessage, sendTextMessage } from "./message-sender";
+import {
+  ButtonMessage,
+  markAsRead,
+  sendInteractiveButtonMessage,
+  sendTextMessage,
+} from "./message-sender";
 import {
   attendanceNamesQuestion,
   goodbyeMessage,
   numberOfGuestQuestion,
   summaryMessage,
 } from "./message-template";
+import { getRSVPNumber, indexToAlphabet, parseNamesFromInput } from "./utils";
 
 const BUSINESS_PHONE_NUMBER_ID: string = "370074172849087";
 const READY_MESSAGE = "siap";
 
-export const handleIncomingMessage = async (message?: WhatsappNotificationMessage) => {
+export const handleIncomingMessage = async (
+  message?: WhatsappNotificationMessage
+) => {
   if (message?.from === undefined) return;
 
   if (message && UserMessageStore.get(message.from) === undefined)
@@ -98,13 +108,16 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       state.setIsAttendHolmat(true);
 
       const nRSVP = await getRSVPNumber(message.from);
-      const buttons: ButtonMessage[] = Array.from({ length: nRSVP }, (_, i) => ({
-        type: "reply",
-        reply: {
-          id: `#reply-guest-holmat-${indexToAlphabet(i + 1)}`,
-          title: (i + 1).toString(),
-        },
-      }));
+      const buttons: ButtonMessage[] = Array.from(
+        { length: nRSVP },
+        (_, i) => ({
+          type: "reply",
+          reply: {
+            id: `#reply-guest-holmat-${indexToAlphabet(i + 1)}`,
+            title: (i + 1).toString(),
+          },
+        })
+      );
       await sendInteractiveButtonMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
@@ -191,13 +204,16 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       state.setIsAttendDinner(true);
 
       const nRSVP = await getRSVPNumber(message.from);
-      const buttons: ButtonMessage[] = Array.from({ length: nRSVP }, (_, i) => ({
-        type: "reply",
-        reply: {
-          id: `#reply-guest-wedcer-${indexToAlphabet(i + 1)}`,
-          title: (i + 1).toString(),
-        },
-      }));
+      const buttons: ButtonMessage[] = Array.from(
+        { length: nRSVP },
+        (_, i) => ({
+          type: "reply",
+          reply: {
+            id: `#reply-guest-wedcer-${indexToAlphabet(i + 1)}`,
+            title: (i + 1).toString(),
+          },
+        })
+      );
       await sendInteractiveButtonMessage(
         BUSINESS_PHONE_NUMBER_ID,
         message.from,
@@ -241,9 +257,18 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
         const names = parseNamesFromInput(body, state.getNRsvpDinner());
         if (names.error.isError && names.error.message) {
           await markAsRead(BUSINESS_PHONE_NUMBER_ID, message.id);
-          await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, names.error.message, message.id);
+          await sendTextMessage(
+            BUSINESS_PHONE_NUMBER_ID,
+            message.from,
+            names.error.message,
+            message.id
+          );
           /** REPEAT QUESTION: Please write the name of the attendees  */
-          await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, attendanceNamesQuestion(2));
+          await sendTextMessage(
+            BUSINESS_PHONE_NUMBER_ID,
+            message.from,
+            attendanceNamesQuestion(2)
+          );
           return;
         }
         state.setDinnerNames(names.names);
@@ -285,7 +310,11 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
       if (message.interactive === undefined) return;
       const response = message.interactive?.button_reply.title.toLowerCase();
       if (response === "ya") {
-        await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, goodbyeMessage);
+        await sendTextMessage(
+          BUSINESS_PHONE_NUMBER_ID,
+          message.from,
+          goodbyeMessage
+        );
         state.setNextQuestionId(7);
 
         /** write response to database */
@@ -323,7 +352,11 @@ export const handleIncomingMessage = async (message?: WhatsappNotificationMessag
           },
         ];
 
-        await sendTextMessage(BUSINESS_PHONE_NUMBER_ID, message.from, "Data Anda telah kami reset! 🐓");
+        await sendTextMessage(
+          BUSINESS_PHONE_NUMBER_ID,
+          message.from,
+          "Data Anda telah kami reset! 🐓"
+        );
 
         /** QUESTION 1 */
         state.setNextQuestionId(1);

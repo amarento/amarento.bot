@@ -7,17 +7,16 @@ import cors, { CorsOptions } from "cors";
 import dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import { ZodError } from "zod";
+import { handleIncomingMessage } from "./lib/message-handler";
+import {
+  sendInitialMessageWithTemplate,
+  sendReminderWithQRCodeTemplate,
+} from "./lib/message-sender";
+import { logWithTimestamp, mapToArray } from "./lib/utils";
 import { SendReminderWithQRSchema } from "./model/schema";
 import UserMessage from "./model/UserMessage";
 import UserMessageStore from "./model/UserMessageStore";
 import { supabase } from "./supabase";
-import { logWithTimestamp, mapToArray } from "./utils/functions";
-import {
-  sendInitialMessageWithTemplate,
-  sendReminderMessage,
-  sendReminderWithQRCodeTemplate,
-} from "./utils/initial-message";
-import { handleIncomingMessage } from "./utils/message-handler";
 
 const app = express();
 app.use(express.json());
@@ -112,7 +111,7 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
 
   /** send reminder. */
   client?.["amarento.id_guests"].map(
-    async (guest) => await sendReminderMessage(client, guest)
+    async (guest) => await sendReminderWithQRCodeTemplate(client, guest)
   );
 
   /** send response. */

@@ -5,6 +5,7 @@ import path from "path";
 import QRCode from "qrcode";
 import { supabase } from "../supabase";
 
+/** method to convert index to alphabet. */
 export function indexToAlphabet(index: number): string {
   if (index < 1 || index > 26) {
     throw new Error("Index must be between 1 and 26");
@@ -46,6 +47,7 @@ export function parseNamesFromInput(
   return { error: { isError: false, message: null }, names };
 }
 
+/** method to get rsvp number from database. */
 export async function getRSVPNumber(waNumber: string) {
   const { data, error } = await supabase
     .from("amarento.id_guests")
@@ -60,6 +62,7 @@ export async function getRSVPNumber(waNumber: string) {
   return nRSVP;
 }
 
+/** method to convert map to array for whatsapp user response state. */
 export function mapToArray<K, V>(map: Map<K, V>): Array<{ key: K; value: V }> {
   return Array.from(map, ([key, value]) => ({ key, value }));
 }
