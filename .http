@@ -1,8 +1,0 @@
-### send initial message
-POST http://localhost:3000/api/send-initial-message
-
-### reset user state
-POST http://localhost:3000/api/reset-user-state
-
-### user state
-GET http://localhost:3000/api/user-state

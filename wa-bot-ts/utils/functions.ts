@@ -1,6 +1,8 @@
 import fs from "fs";
+import Jimp from "jimp";
 import { DateTime } from "luxon";
 import path from "path";
+import QRCode from "qrcode";
 import { supabase } from "../supabase";
 
 export function indexToAlphabet(index: number): string {
@@ -84,4 +86,64 @@ export function logWithTimestamp(message: string): void {
 export function pathExist(filePath: string): void {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+/** method to generate invitation. */
+export async function generateInvitation(
+  background: string,
+  name: string,
+  guestId: string,
+  url: string,
+  output: string
+) {
+  /** load background. */
+  const bg = await Jimp.read(background);
+
+  /** generate qr code. */
+  const size = Math.min(bg.getWidth(), bg.getHeight()) / 2;
+  const dataURL = await QRCode.toDataURL(url, {
+    width: size,
+  });
+  const qr = await Jimp.read(Buffer.from(dataURL.split(",")[1], "base64"));
+
+  /** calculate positions. */
+  const x = (bg.getWidth() - size) / 2;
+  const y = (bg.getHeight() - size) / 2;
+
+  /** composite qr code into the background. */
+  bg.composite(qr, x, y - 50);
+
+  /** load font */
+  const smallFont = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+
+  /** add guest name. */
+  bg.print(
+    smallFont,
+    0,
+    y + size - 60,
+    {
+      text: `${name}`,
+      alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+      alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
+    },
+    bg.getWidth()
+  );
+
+  /** add rsvp pax. */
+  bg.print(
+    smallFont,
+    0,
+    y + size,
+    {
+      text: "Valid for 2 pax",
+      alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+      alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
+    },
+    bg.getWidth()
+  );
+
+  /** save the invitation as iamge file. */
+  await bg.writeAsync(`invitations/${output}-${guestId}.png`);
+
+  console.log(`Invitation generated: ${output}`);
 }
