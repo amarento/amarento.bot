@@ -148,3 +148,7 @@ dist
 .firebase/
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+*.http
+canvas/*
+**/invitations/*

@@ -14,13 +14,6 @@
       "program": "${workspaceFolder}/wa-bot-ts/server.ts",
       "preLaunchTask": "tsc: build - wa-bot-ts/tsconfig.json",
       "outFiles": ["${workspaceFolder}/wa-bot-ts/dist/**/*.js"]
-    },
-    {
-      "name": "Python Debugger: Current File",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal"
     }
   ]
 }
