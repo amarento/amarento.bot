@@ -1,7 +1,13 @@
 import { z } from "zod";
 
-export const SendReminderWithQRSchema = z.object({
+export const SendMessageRequestSchema = z.object({
   code: z.string(),
 });
 
-export type SendReminderWithQRRequest = z.infer<typeof SendReminderWithQRSchema>;
+export type SendMessageRequest = z.infer<typeof SendMessageRequestSchema>;
+
+export const SendReminderRequestSchema = SendMessageRequestSchema.extend({
+  sendQR: z.boolean(),
+});
+
+export type SendReminderRequest = z.infer<typeof SendReminderRequestSchema>;
