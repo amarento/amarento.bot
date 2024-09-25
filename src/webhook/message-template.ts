@@ -1,7 +1,7 @@
 export class MessageTemplate {
   public static numberOfGuest(
     n_rsvp: number,
-    event: "Holy Matrimony" | "Wedding Cerremony"
+    event: "Holy Matrimony" | "Wedding Ceremony"
   ): string {
     return `Anda mendapatkan ${n_rsvp} RSVP di acara ${event}. \nBerapa orang yang akan menghadiri ${event}?`;
   }
