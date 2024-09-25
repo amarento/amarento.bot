@@ -1,9 +1,7 @@
 import fs from "fs";
 import Jimp from "jimp";
-import { DateTime } from "luxon";
 import path from "path";
 import QRCode from "qrcode";
-import { supabase } from "../supabase";
 
 /** method to convert index to alphabet. */
 export function indexToAlphabet(index: number): string {
@@ -47,21 +45,6 @@ export function parseNamesFromInput(
   return { error: { isError: false, message: null }, names };
 }
 
-/** method to get rsvp number from database. */
-export async function getRSVPNumber(waNumber: string) {
-  const { data, error } = await supabase
-    .from("amarento.id_guests")
-    .select("n_rsvp_plan")
-    .eq("wa_number", waNumber);
-  if (error)
-    throw new Error(`Error when fetching the number of RSVP for ${waNumber}.`);
-
-  const nRSVP = data.at(0)?.n_rsvp_plan;
-  if (nRSVP === undefined)
-    throw new Error(`RSVP number could not be undefined. Context: ${waNumber}`);
-  return nRSVP;
-}
-
 /** method to convert map to array for whatsapp user response state. */
 export function mapToArray<K, V>(map: Map<K, V>): Array<{ key: K; value: V }> {
   return Array.from(map, ([key, value]) => ({ key, value }));
@@ -76,13 +59,6 @@ export function combineNames(groom: string, bride: string): string {
   }
 
   return `${getFirstName(groom)} and ${getFirstName(bride)}`;
-}
-
-/** method to log message with timestamp. */
-export function logWithTimestamp(message: string): void {
-  const timestamp = DateTime.now().toFormat("yyyy-MM-dd HH:mm:ss");
-
-  console.log(`[${timestamp}] ${message}`);
 }
 
 /** method to validate path existence. */
@@ -160,4 +136,11 @@ export async function generateInvitation(
       message: "Error occurs when generating invitation.",
     };
   }
+}
+
+/** read configuration file */
+export async function readConfig() {
+  const configPath = path.join(__dirname, "../config.json");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  return config;
 }

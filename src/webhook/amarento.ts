@@ -7,7 +7,6 @@ import {
   BodyComponent,
   BodyParameter,
   Button,
-  DateTime,
   Header,
   HeaderComponent,
   HeaderParameter,
@@ -19,18 +18,17 @@ import {
   URLComponent,
 } from "whatsapp-api-js/messages";
 import { ServerMedia, ServerMessage } from "whatsapp-api-js/types";
-import { Tables } from "../database.types";
+import { Client, Guest } from "../db/schema";
+import { getRSVP, updateRSVP } from "../db/webhook";
+import { logger } from "../logging/winston";
 import UserMessage from "../model/UserMessage";
 import UserMessageStore from "../model/UserMessageStore";
-import { supabase } from "../supabase";
 import { ButtonMessage, sendInteractiveButtonMessage } from "./message-sender";
 import { MessageTemplate } from "./message-template";
 import {
   combineNames,
   generateInvitation,
-  getRSVPNumber,
   indexToAlphabet,
-  logWithTimestamp,
   parseNamesFromInput,
   pathExist,
 } from "./utils";
@@ -109,7 +107,17 @@ export class Amarento {
         /** QUESTION 2 - How many people would come to holy matrimony? */
         state.setIsAttendHolmat(true);
 
-        const nRSVP = await getRSVPNumber(message.from);
+        const nRSVP = await getRSVP(message.from);
+        if (nRSVP instanceof Error) {
+          await this.api.sendMessage(
+            this.whatsappId,
+            message.from,
+            new Text("WOE, SORRY POL WOE! GAK HOKI. 🐤")
+          );
+          logger.error(`[${message.from}] Error on Question 2.`);
+          return;
+        }
+
         const buttons: ButtonMessage[] = Array.from(
           { length: nRSVP },
           (_, i) =>
@@ -190,7 +198,17 @@ export class Amarento {
 
         state.setIsAttendDinner(true);
 
-        const nRSVP = await getRSVPNumber(message.from);
+        const nRSVP = await getRSVP(message.from);
+        if (nRSVP instanceof Error) {
+          await this.api.sendMessage(
+            this.whatsappId,
+            message.from,
+            new Text("WOE, SORRY POL WOE! GAK HOKI. 🐤")
+          );
+          logger.error(`[${message.from}] Error on Question 4.`);
+          return;
+        }
+
         const buttons: ButtonMessage[] = Array.from(
           { length: nRSVP },
           (_, i) => ({
@@ -230,7 +248,17 @@ export class Amarento {
       }
       case 5: {
         if (message && message.type === "text") {
-          const nRSVP = await getRSVPNumber(message.from);
+          const nRSVP = await getRSVP(message.from);
+          if (nRSVP instanceof Error) {
+            await this.api.sendMessage(
+              this.whatsappId,
+              message.from,
+              new Text("WOE, SORRY POL WOE! GAK HOKI. 🐤")
+            );
+            logger.error(`[${message.from}] Error on Question 5.`);
+            return;
+          }
+
           const body = message.text?.body;
           if (body === undefined) {
             /** REPEAT QUESTION: Please write the name of the attendees  */
@@ -288,18 +316,16 @@ export class Amarento {
           state.setNextQuestionId(7);
 
           /** write response to database */
-          const { error } = await supabase
-            .from("amarento.id_guests")
-            .update({
-              rsvp_holmat: state.getIsAttendHolmat(),
-              n_rsvp_holmat_wa: state.getNRsvpHolmat(),
-              rsvp_dinner: state.getIsAttendDinner(),
-              n_rsvp_dinner_wa: state.getNRsvpDinner(),
-              guest_names: state.getDinnerNames().toString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("wa_number", message.from);
-          if (error) throw new Error(error.message);
+          const update = updateRSVP(message.from, state);
+          if (update instanceof Error) {
+            await this.api.sendMessage(
+              this.whatsappId,
+              message.from,
+              new Text("WOE, SORRY POL WOE! GAK HOKI. 🐤")
+            );
+            logger.error(`[${message.from}] Error when updating RSVP.`);
+            return;
+          }
           return;
         }
 
@@ -328,29 +354,30 @@ export class Amarento {
   };
 
   public sendInitialMessage = async (
-    client: Tables<"amarento.id_clients">,
-    guest: Tables<"amarento.id_guests">
+    client: Client,
+    guest: Guest
   ): Promise<void> => {
     /** construct template. */
+
     const message = new Template(
       "amarento_hello",
       new Language("id"),
       new HeaderComponent(
         new HeaderParameter(
-          combineNames(client.name_groom ?? "", client.name_bride ?? "")
+          combineNames(client.nameGroom ?? "", client.nameBride ?? "")
         )
       ),
       new BodyComponent(
-        new BodyParameter(guest.inv_names),
-        new BodyParameter(`${client.name_groom} and ${client.name_bride}`),
-        new BodyParameter(client.parents_name_groom ?? ""),
-        new BodyParameter(client.parents_name_bride ?? ""),
-        new BodyParameter(client.wedding_day?.toString() ?? ""),
-        new BodyParameter(client.holmat_location ?? ""),
-        new BodyParameter(new DateTime(client.holmat_time ?? "")),
-        new BodyParameter(client.dinner_location ?? ""),
-        new BodyParameter(new DateTime(client.dinner_time ?? "")),
-        new BodyParameter(guest.n_rsvp_plan.toString())
+        new BodyParameter(guest.invNames),
+        new BodyParameter(`${client.nameGroom} and ${client.nameBride}`),
+        new BodyParameter(client.parentsNameGroom ?? ""),
+        new BodyParameter(client.parentsNameBride ?? ""),
+        new BodyParameter(client.weddingDay?.toString() ?? ""),
+        new BodyParameter(client.holmatLocation ?? ""),
+        new BodyParameter(client.holmatTime?.toISOString() ?? ""),
+        new BodyParameter(client.dinnerLocation ?? ""),
+        new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
+        new BodyParameter(guest.nRSVPPlan.toString())
       ),
       new URLComponent("/")
     );
@@ -358,18 +385,18 @@ export class Amarento {
     /** send initial message. */
     const response = await this.api.sendMessage(
       this.whatsappId,
-      guest.wa_number,
+      guest.waNumber,
       message
     );
 
-    logWithTimestamp(
+    logger.info(
       `Initial message sent with response. ${JSON.stringify(response)}`
     );
   };
 
   public sendReminder = async (
-    client: Tables<"amarento.id_clients">,
-    guest: Tables<"amarento.id_guests">,
+    client: Client,
+    guest: Guest,
     sendQR: boolean = true
   ) => {
     if (!sendQR) {
@@ -379,21 +406,21 @@ export class Amarento {
         new Language("id"),
         new HeaderComponent(
           new HeaderParameter(
-            combineNames(client.name_groom ?? "", client.name_bride ?? "")
+            combineNames(client.nameGroom ?? "", client.nameBride ?? "")
           )
         ),
         new BodyComponent(
-          new BodyParameter(guest.inv_names),
-          new BodyParameter(`${client.name_groom} and ${client.name_bride}`),
-          new BodyParameter(client.parents_name_groom ?? ""),
-          new BodyParameter(client.parents_name_bride ?? ""),
-          new BodyParameter(client.holmat_location ?? ""),
-          new BodyParameter(new DateTime(client.holmat_time ?? "")),
-          new BodyParameter(client.dinner_location ?? ""),
-          new BodyParameter(new DateTime(client.dinner_time ?? "")),
-          new BodyParameter(guest.n_rsvp_plan.toString()),
+          new BodyParameter(guest.invNames),
+          new BodyParameter(`${client.nameGroom} and ${client.nameBride}`),
+          new BodyParameter(client.parentsNameGroom ?? ""),
+          new BodyParameter(client.parentsNameBride ?? ""),
+          new BodyParameter(client.holmatLocation ?? ""),
+          new BodyParameter(client.holmatTime?.toISOString() ?? ""),
+          new BodyParameter(client.dinnerLocation ?? ""),
+          new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
+          new BodyParameter(guest.nRSVPPlan.toString()),
           new BodyParameter(
-            combineNames(client.name_groom ?? "", client.name_bride ?? "")
+            combineNames(client.nameGroom ?? "", client.nameBride ?? "")
           )
         )
       );
@@ -401,10 +428,10 @@ export class Amarento {
       /** send template message. */
       const response = await this.api.sendMessage(
         this.whatsappId,
-        guest.wa_number,
+        guest.waNumber,
         message
       );
-      logWithTimestamp(
+      logger.info(
         `Reminder message sent with response. ${JSON.stringify(response)}`
       );
 
@@ -412,16 +439,16 @@ export class Amarento {
     }
 
     /** create qr code */
-    logWithTimestamp(`Creating QR code for guest with id ${guest.id}`);
-    const url = `https://amarento.id/clients/${client.client_code}/${guest.id}`;
-    const fileName = `./invitations/qr-${client.client_code}-${guest.id}.png`;
+    logger.info(`Creating QR code for guest with id ${guest.id}`);
+    const url = `https://amarento.id/clients/${client.code}/${guest.id}`;
+    const fileName = `./invitations/qr-${client.code}-${guest.id}.png`;
     pathExist(fileName);
 
     /** generate invitation image. */
     const generateResponse = await generateInvitation(
       "./images/background.jpg",
-      guest.inv_names,
-      guest.n_rsvp_plan.toString(),
+      guest.invNames,
+      guest.nRSVPPlan.toString(),
       url,
       fileName
     );
@@ -443,17 +470,17 @@ export class Amarento {
       new Language("id"),
       new HeaderComponent(new HeaderParameter(new Image(id, true))),
       new BodyComponent(
-        new BodyParameter(guest.inv_names),
-        new BodyParameter(`${client.name_groom} and ${client.name_bride}`),
-        new BodyParameter(client.parents_name_groom ?? ""),
-        new BodyParameter(client.parents_name_bride ?? ""),
-        new BodyParameter(client.holmat_location ?? ""),
-        new BodyParameter(new DateTime(client.holmat_time ?? "")),
-        new BodyParameter(client.dinner_location ?? ""),
-        new BodyParameter(new DateTime(client.dinner_time ?? "")),
-        new BodyParameter(guest.n_rsvp_plan.toString()),
+        new BodyParameter(guest.invNames),
+        new BodyParameter(`${client.nameGroom} and ${client.nameBride}`),
+        new BodyParameter(client.parentsNameGroom ?? ""),
+        new BodyParameter(client.parentsNameBride ?? ""),
+        new BodyParameter(client.holmatLocation ?? ""),
+        new BodyParameter(client.holmatTime?.toISOString() ?? ""),
+        new BodyParameter(client.dinnerLocation ?? ""),
+        new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
+        new BodyParameter(guest.nRSVPPlan.toString()),
         new BodyParameter(
-          combineNames(client.name_groom ?? "", client.name_bride ?? "")
+          combineNames(client.nameGroom ?? "", client.nameBride ?? "")
         )
       )
     );
@@ -461,10 +488,10 @@ export class Amarento {
     /** send template message. */
     const response = await this.api.sendMessage(
       this.whatsappId,
-      guest.wa_number,
+      guest.waNumber,
       message
     );
-    logWithTimestamp(
+    logger.info(
       `Reminder message sent with response. ${JSON.stringify(response)}`
     );
 
