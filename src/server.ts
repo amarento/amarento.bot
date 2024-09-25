@@ -1,3 +1,8 @@
+import {
+  WhatsappNotificationEntry,
+  WhatsappNotificationStatusStatus,
+  WhatsappNotificationValue,
+} from "@daweto/whatsapp-api-types";
 import cors, { CorsOptions } from "cors";
 import express, { Request, Response } from "express";
 import fs from "fs";
@@ -83,7 +88,23 @@ app.post("/webhook", async (req: Request, res: Response) => {
 });
 
 const code = "RJGFWB8V";
-api.on.message = async ({ phoneID, from, message, name, reply }) => {
+api.on.message = async ({ from, message, raw }) => {
+  const entry = raw.entry?.[0] as WhatsappNotificationEntry | undefined;
+  const value = entry?.changes?.[0].value as
+    | WhatsappNotificationValue
+    | undefined;
+  const status = value?.statuses?.at(0);
+
+  /** ignore status sent and status read */
+  if (
+    status?.status === WhatsappNotificationStatusStatus.Sent ||
+    status?.status === WhatsappNotificationStatusStatus.Read ||
+    status?.status === WhatsappNotificationStatusStatus.Delivered
+  ) {
+    logger.info(`Ignoring message with status ${status?.status}.`);
+    return;
+  }
+
   const clientId = await getClientId(from);
   if (clientId instanceof Error) {
     logger.info("User was not registered as a client in our database.");
