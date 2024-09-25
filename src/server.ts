@@ -1,24 +1,22 @@
-import {
-  WhatsappNotificationEntry,
-  WhatsappNotificationStatusStatus,
-  WhatsappNotificationValue,
-} from "@daweto/whatsapp-api-types";
 import cors, { CorsOptions } from "cors";
-import dotenv from "dotenv";
 import express, { Request, Response } from "express";
-import { WhatsAppAPI } from "whatsapp-api-js/.";
-import { ServerMessage } from "whatsapp-api-js/types";
+import fs from "fs";
+import { WhatsAppAPI } from "whatsapp-api-js";
+import { Node18 } from "whatsapp-api-js/setup/node";
+import { GetParams, PostData } from "whatsapp-api-js/types";
 import { ZodError } from "zod";
-
-import { Amarento } from "./lib/amarento";
-import { logWithTimestamp, mapToArray } from "./lib/utils";
+import { getClient, getClientCode, getClientId } from "./db/webhook";
+import { env } from "./env";
+import { logger } from "./logging/winston";
 import {
+  ConfigRequestSchema,
   SendMessageRequestSchema,
   SendReminderRequestSchema,
 } from "./model/schema";
 import UserMessage from "./model/UserMessage";
 import UserMessageStore from "./model/UserMessageStore";
-import { supabase } from "./supabase";
+import { Amarento } from "./webhook/amarento";
+import { mapToArray } from "./webhook/utils";
 
 const app = express();
 app.use(express.json());
@@ -31,69 +29,80 @@ const options: CorsOptions = {
 };
 app.use(cors(options));
 
-dotenv.config();
-const {
-  WEBHOOK_VERIFY_TOKEN,
-  PORT,
-  BUSINESS_PHONE_NUMBER_ID,
-  GRAPH_API_TOKEN,
-} = process.env;
+const api = new WhatsAppAPI(
+  Node18({
+    token: env.GRAPH_API_TOKEN,
+    appSecret: env.WEBHOOK_APP_SECRET,
+    webhookVerifyToken: env.WEBHOOK_VERIFY_TOKEN,
+    secure: true,
+    v: "v20.0",
+  })
+);
 
-if (BUSINESS_PHONE_NUMBER_ID === undefined) {
-  console.error("BUSINESS_PHONE_NUMBER_ID not defined.");
-  process.exit(1);
-}
-
-if (GRAPH_API_TOKEN === undefined) {
-  console.error("GRAPH_API_TOKEN not defined.");
-  process.exit(1);
-}
+const amarento = new Amarento(env.BUSINESS_PHONE_NUMBER_ID, api);
 
 app.get("/", async (req: Request, res: Response) => {
-  res.send("AMARENTO IS THE BEST.");
+  res.send("Welcome to amarento bot server.");
 });
 
-const api = new WhatsAppAPI({
-  token: GRAPH_API_TOKEN,
-  appSecret: "TEST",
-  webhookVerifyToken: WEBHOOK_VERIFY_TOKEN,
-  secure: true,
-  v: "v20.0",
+app.get("/health", async (_: Request, res: Response) => {
+  res.status(200).send({ success: true });
 });
 
-const amarento = new Amarento(BUSINESS_PHONE_NUMBER_ID, api);
-app.post("/webhook", async (req: Request, res: Response) => {
-  const entry: WhatsappNotificationEntry | undefined = req.body.entry?.[0];
-  const value: WhatsappNotificationValue | undefined =
-    entry?.changes?.[0].value;
+app.post("/api/config", async (req: Request, res: Response) => {
+  /** parse request */
+  const request = ConfigRequestSchema.parse(req.body);
 
-  /** ignore status sent and status read */
-  const status = value?.statuses?.at(0);
-  if (
-    status?.status === WhatsappNotificationStatusStatus.Sent ||
-    status?.status === WhatsappNotificationStatusStatus.Read ||
-    status?.status === WhatsappNotificationStatusStatus.Delivered
-  )
-    return;
+  /** write to a file. */
+  fs.writeFileSync("config.json", JSON.stringify(request), "utf-8");
 
-  const message = value?.messages?.[0] as ServerMessage;
-  await amarento.onMessage(message);
-
-  res.sendStatus(200);
+  /** send response. */
+  res
+    .status(200)
+    .send({ success: true, message: "Client was successfully configured." });
 });
 
 app.get("/webhook", (req: Request, res: Response) => {
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
+  const challenge = api.get(req.query as GetParams);
+  res.status(200).send(challenge);
+  logger.info("Webhook verified successfully!");
+});
 
-  if (mode === "subscribe" && token === WEBHOOK_VERIFY_TOKEN) {
-    res.status(200).send(challenge);
-    console.log("Webhook verified successfully!");
-  } else {
-    res.status(200).send("GA ONOK TOKEN WOE!");
+app.post("/webhook", async (req: Request, res: Response) => {
+  /** request post data. */
+  const data = req.body as PostData;
+
+  /** message signature. please make sure APP_SECRET is correct. */
+  const signature = req.headers["x-hub-signature-256"] as string;
+
+  try {
+    return await api.post(data, JSON.stringify(req.body), signature);
+  } catch (ex) {
+    console.log(ex);
   }
 });
+
+const code = "RJGFWB8V";
+api.on.message = async ({ phoneID, from, message, name, reply }) => {
+  const clientId = await getClientId(from);
+  if (clientId instanceof Error) {
+    logger.info("User was not registered as a client in our database.");
+    return;
+  }
+
+  const clientCode = await getClientCode(clientId);
+  if (clientCode instanceof Error) {
+    logger.info("Error occurs when loading client code.");
+    return;
+  }
+
+  if (code !== clientCode) {
+    logger.info("Client code does not match.");
+    return;
+  }
+
+  amarento.onMessage(message);
+};
 
 app.get("/api/user-state", (_: Request, res: Response) => {
   const states = UserMessageStore.getData();
@@ -114,18 +123,16 @@ app.post("/api/send-initial-message", async (req: Request, res: Response) => {
     /** client code. */
     const request = SendMessageRequestSchema.parse(req.body);
 
-    const { data: client, error } = await supabase
-      .from("amarento.id_clients")
-      .select(`*, "amarento.id_guests" (*)`)
-      .eq("client_code", request.code)
-      .single();
-    if (error) return res.status(500).send({ success: false, message: error });
+    /** client. */
+    const client = await getClient(request.clientCode);
+    if (client instanceof Error)
+      return res.status(500).send({ success: false, message: client.message });
 
     /** send initial messsage. */
-    client?.["amarento.id_guests"].map(
+    client.guests.map(
       async (guest) => await amarento.sendInitialMessage(client, guest)
     );
-    logWithTimestamp("Initial message sent successfully.");
+    logger.info("Initial message sent successfully.");
 
     res.status(200).send({ success: true, message: null });
   } catch (error) {
@@ -141,24 +148,24 @@ app.post("/api/send-initial-message", async (req: Request, res: Response) => {
 
 app.post("/api/send-reminder", async (req: Request, res: Response) => {
   try {
+    /** send qr. */
     const request = SendReminderRequestSchema.parse(req.body);
-    const { data: client, error } = await supabase
-      .from("amarento.id_clients")
-      .select(`*, "amarento.id_guests" (*)`)
-      .eq("client_code", request.code)
-      .single();
-    if (error) return res.status(500).send({ success: false, message: error });
+
+    /** client. */
+    const client = await getClient(request.clientCode);
+    if (client instanceof Error)
+      return res.status(500).send({ success: false, message: client.message });
 
     /** filter guests and send reminder. */
-    const guests = client["amarento.id_guests"].filter(
-      (guest) => guest.rsvp_dinner && guest.rsvp_holmat
+    const guests = client.guests.filter(
+      (guest) => guest.rsvpDinner && guest.rsvpHolmat
     );
-    logWithTimestamp(`Sending reminder to ${guests.length} guests.`);
+    logger.info(`Sending reminder to ${guests.length} guests.`);
     guests.map(
       async (guest) =>
         await amarento.sendReminder(client, guest, request.sendQR)
     );
-    logWithTimestamp("Reminder sent successfully.");
+    logger.info("Reminder sent successfully.");
 
     /** send response. */
     res.status(200).send({ success: true, message: null });
@@ -175,16 +182,16 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
 
 app.post("/api/send-reminder", async (req: Request, res: Response) => {
   try {
+    /** client code. */
     const request = SendMessageRequestSchema.parse(req.body);
-    const { data: client, error } = await supabase
-      .from("amarento.id_clients")
-      .select(`*, "amarento.id_guests" (*)`)
-      .eq("client_code", request.code)
-      .single();
-    if (error) return res.status(500).send({ success: false, message: error });
+
+    /** client. */
+    const client = await getClient(request.clientCode);
+    if (client instanceof Error)
+      return res.status(500).send({ success: false, message: client.message });
 
     /** send reminder. */
-    client?.["amarento.id_guests"].map(
+    client?.guests.map(
       async (guest) => await amarento.sendReminder(client, guest)
     );
 
@@ -201,6 +208,6 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is listening on port: http://localhost:${PORT}`);
+app.listen(env.PORT, () => {
+  console.log(`Server is listening on port: http://localhost:${env.PORT}`);
 });
