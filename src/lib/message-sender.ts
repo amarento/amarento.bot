@@ -1,17 +1,9 @@
 import axios from "axios";
-import dotenv from "dotenv";
 import { Header } from "whatsapp-api-js/messages";
-dotenv.config();
-
-const { GRAPH_API_TOKEN } = process.env;
-
-if (GRAPH_API_TOKEN === undefined) {
-  console.error("GRAPH_API_TOKEN not defined.");
-  process.exit(1);
-}
+import { env } from "../env";
 
 const headers = {
-  Authorization: `Bearer ${GRAPH_API_TOKEN}`,
+  Authorization: `Bearer ${env.GRAPH_API_TOKEN}`,
   "Content-Type": "application/json",
 };
 
