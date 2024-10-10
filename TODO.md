@@ -31,7 +31,7 @@
 - [x] Stabilize webhook endpoint.
 - [x] Fix endpoint to send reminder.
 - [ ] Datetime format.
-- [ ] Add new endpoint to be able to set clients code in the amarento class.
+- [ ] Migrate to DENO or HONO.
 
 ## 💚 amarento.id
 

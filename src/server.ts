@@ -183,10 +183,8 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
     if (client instanceof Error)
       return res.status(500).send({ success: false, message: client.message });
 
-    /** filter guests and send reminder. */
-    const guests = client.guests.filter(
-      (guest) => guest.rsvpDinner && guest.rsvpHolmat
-    );
+    /** filter guests and send reminder. insert custom logic here for reminder.  */
+    const guests = client.guests.filter((guest) => guest.rsvpDinner);
 
     logger.info(`Sending reminder to ${guests.length} guests.`);
     guests.map(
