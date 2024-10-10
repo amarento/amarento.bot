@@ -30,6 +30,7 @@ import {
   indexToAlphabet,
   parseNamesFromInput,
   pathExist,
+  toLocalTime,
 } from "./utils";
 const READY_MESSAGE = "ok";
 
@@ -372,9 +373,9 @@ export class Amarento {
         new BodyParameter(client.parentsNameBride ?? ""),
         new BodyParameter(client.weddingDay?.toString() ?? ""),
         new BodyParameter(client.holmatLocation ?? ""),
-        new BodyParameter(client.holmatTime?.toISOString() ?? ""),
+        new BodyParameter(toLocalTime(client.holmatTime ?? new Date())),
         new BodyParameter(client.dinnerLocation ?? ""),
-        new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
+        new BodyParameter(toLocalTime(client.dinnerTime ?? new Date())),
         new BodyParameter(guest.nRSVPPlan.toString())
       ),
       new URLComponent("/")
@@ -413,9 +414,9 @@ export class Amarento {
           new BodyParameter(client.parentsNameGroom ?? ""),
           new BodyParameter(client.parentsNameBride ?? ""),
           new BodyParameter(client.holmatLocation ?? ""),
-          new BodyParameter(client.holmatTime?.toISOString() ?? ""),
+          new BodyParameter(toLocalTime(client.holmatTime ?? new Date())),
           new BodyParameter(client.dinnerLocation ?? ""),
-          new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
+          new BodyParameter(toLocalTime(client.dinnerTime ?? new Date())),
           new BodyParameter(guest.nRSVPPlan.toString()),
           new BodyParameter(
             combineNames(client.nameGroom ?? "", client.nameBride ?? "")
@@ -477,9 +478,9 @@ export class Amarento {
           new BodyParameter(client.parentsNameGroom ?? ""),
           new BodyParameter(client.parentsNameBride ?? ""),
           new BodyParameter(client.holmatLocation ?? ""),
-          new BodyParameter(client.holmatTime?.toISOString() ?? ""),
+          new BodyParameter(toLocalTime(client.holmatTime ?? new Date())),
           new BodyParameter(client.dinnerLocation ?? ""),
-          new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
+          new BodyParameter(toLocalTime(client.dinnerTime ?? new Date())),
           new BodyParameter(guest.nRSVPPlan.toString()),
           new BodyParameter(
             combineNames(client.nameGroom ?? "", client.nameBride ?? "")

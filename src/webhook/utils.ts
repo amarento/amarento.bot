@@ -1,5 +1,6 @@
 import fs from "fs";
 import Jimp from "jimp";
+import { DateTime } from "luxon";
 import path from "path";
 import QRCode from "qrcode";
 import { logger } from "../logging/winston";
@@ -148,4 +149,12 @@ export async function readConfig() {
   const configPath = path.join(__dirname, "../config.json");
   const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
   return config;
+}
+
+/** method to convert javascript datetime to pretty local time */
+export function toLocalTime(date: Date) {
+  return DateTime.fromJSDate(date)
+    .setZone("Asia/Jakarta")
+    .setLocale("id-ID")
+    .toFormat("EEEE, dd MMMM yyyy 'pukul' HH:mm 'WIB'");
 }

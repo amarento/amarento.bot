@@ -30,7 +30,10 @@
     - [x] Push image to whatsapp api
 - [x] Stabilize webhook endpoint.
 - [x] Fix endpoint to send reminder.
-- [ ] Datetime format.
+- [x] Beautify datetime format.
+- [ ] Fix asynchronous when sending reminder.
+- [ ] Fix nullable data type from client and guest.
+- [ ] Update initial message template.
 - [ ] Migrate to DENO or HONO.
 
 ## 💚 amarento.id
