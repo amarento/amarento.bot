@@ -1,4 +1,3 @@
-import FormData from "form-data";
 import fs from "fs";
 import { WhatsAppAPI } from "whatsapp-api-js/.";
 import {
@@ -32,7 +31,6 @@ import {
   parseNamesFromInput,
   pathExist,
 } from "./utils";
-
 const READY_MESSAGE = "ok";
 
 export class Amarento {
@@ -454,47 +452,54 @@ export class Amarento {
     );
     if (!generateResponse.success) return generateResponse;
 
-    /** upload invitation to whatsapp. */
-    const form = new FormData();
-    form.append("file", fs.createReadStream(fileName));
-    form.append("type", "image/png");
-    form.append("messaging_product", "whatsapp");
-    const { id } = (await this.api.uploadMedia(
-      this.whatsappId,
-      form
-    )) as ServerMedia;
+    try {
+      /** upload invitation to whatsapp. */
+      const form = new FormData();
+      form.set(
+        "file",
+        new Blob([fs.readFileSync(fileName)], { type: "image/png" })
+      );
 
-    /** construct template. */
-    const message = new Template(
-      "amarento_reminder",
-      new Language("id"),
-      new HeaderComponent(new HeaderParameter(new Image(id, true))),
-      new BodyComponent(
-        new BodyParameter(guest.invNames),
-        new BodyParameter(`${client.nameGroom} and ${client.nameBride}`),
-        new BodyParameter(client.parentsNameGroom ?? ""),
-        new BodyParameter(client.parentsNameBride ?? ""),
-        new BodyParameter(client.holmatLocation ?? ""),
-        new BodyParameter(client.holmatTime?.toISOString() ?? ""),
-        new BodyParameter(client.dinnerLocation ?? ""),
-        new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
-        new BodyParameter(guest.nRSVPPlan.toString()),
-        new BodyParameter(
-          combineNames(client.nameGroom ?? "", client.nameBride ?? "")
+      const { id } = (await this.api.uploadMedia(
+        this.whatsappId,
+        form
+      )) as ServerMedia;
+      logger.info(`Media with id ${id} was successfully uploaded.`);
+
+      /** construct template. */
+      const message = new Template(
+        "amarento_reminder",
+        new Language("id"),
+        new HeaderComponent(new HeaderParameter(new Image(id, true))),
+        new BodyComponent(
+          new BodyParameter(guest.invNames),
+          new BodyParameter(`${client.nameGroom} and ${client.nameBride}`),
+          new BodyParameter(client.parentsNameGroom ?? ""),
+          new BodyParameter(client.parentsNameBride ?? ""),
+          new BodyParameter(client.holmatLocation ?? ""),
+          new BodyParameter(client.holmatTime?.toISOString() ?? ""),
+          new BodyParameter(client.dinnerLocation ?? ""),
+          new BodyParameter(client.dinnerTime?.toISOString() ?? ""),
+          new BodyParameter(guest.nRSVPPlan.toString()),
+          new BodyParameter(
+            combineNames(client.nameGroom ?? "", client.nameBride ?? "")
+          )
         )
-      )
-    );
+      );
 
-    /** send template message. */
-    const response = await this.api.sendMessage(
-      this.whatsappId,
-      guest.waNumber,
-      message
-    );
-    logger.info(
-      `Reminder message sent with response. ${JSON.stringify(response)}`
-    );
+      /** send template message. */
+      const response = await this.api.sendMessage(
+        this.whatsappId,
+        guest.waNumber,
+        message
+      );
+      logger.info(
+        `Reminder message sent with response. ${JSON.stringify(response)}`
+      );
 
-    return { success: true, message: null };
+      return { success: true, message: null };
+    } catch (ex) {
+      logger.error(`An error occured while sending reminder. Error: ${ex}`);
+    }
   };
 }

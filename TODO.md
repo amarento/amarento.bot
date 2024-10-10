@@ -29,6 +29,8 @@
   - [x] Create endpoint to send reminder with qr.
     - [x] Push image to whatsapp api
 - [x] Stabilize webhook endpoint.
+- [x] Fix endpoint to send reminder.
+- [ ] Datetime format.
 - [ ] Add new endpoint to be able to set clients code in the amarento class.
 
 ## 💚 amarento.id

@@ -187,6 +187,7 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
     const guests = client.guests.filter(
       (guest) => guest.rsvpDinner && guest.rsvpHolmat
     );
+
     logger.info(`Sending reminder to ${guests.length} guests.`);
     guests.map(
       async (guest) =>
@@ -207,34 +208,6 @@ app.post("/api/send-reminder", async (req: Request, res: Response) => {
   }
 });
 
-app.post("/api/send-reminder", async (req: Request, res: Response) => {
-  try {
-    /** client code. */
-    const request = SendMessageRequestSchema.parse(req.body);
-
-    /** client. */
-    const client = await getClient(request.clientCode);
-    if (client instanceof Error)
-      return res.status(500).send({ success: false, message: client.message });
-
-    /** send reminder. */
-    client?.guests.map(
-      async (guest) => await amarento.sendReminder(client, guest)
-    );
-
-    /** send response. */
-    res.status(200).send({ success: true, message: null });
-  } catch (error) {
-    if (error instanceof ZodError)
-      res.status(400).json({ success: false, errors: error.errors });
-    else
-      res.status(500).json({
-        success: false,
-        message: "Error occurs when sending reminder.",
-      });
-  }
-});
-
 app.listen(env.PORT, () => {
-  console.log(`Server is listening on port: http://localhost:${env.PORT}`);
+  logger.info(`Server is listening on port: http://localhost:${env.PORT}`);
 });

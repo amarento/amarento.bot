@@ -2,6 +2,7 @@ import fs from "fs";
 import Jimp from "jimp";
 import path from "path";
 import QRCode from "qrcode";
+import { logger } from "../logging/winston";
 
 /** method to convert index to alphabet. */
 export function indexToAlphabet(index: number): string {
@@ -124,13 +125,17 @@ export async function generateInvitation(
 
     /** save the invitation as iamge file. */
     await bg.writeAsync(fileName);
-    console.log(`Invitation generated: ${fileName}`);
+    logger.info(
+      `Invitation with the name ${fileName} was successfully generated.`
+    );
     return {
       success: true,
       message: null,
     };
   } catch (error) {
-    console.error(`Error generating invitation: ${error}`);
+    logger.error(
+      `An error occured while generating the invitation. Error: ${error}`
+    );
     return {
       success: false,
       message: "Error occurs when generating invitation.",
