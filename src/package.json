@@ -1,7 +1,7 @@
 {
-  "name": "whatsapp-echo-webhook",
+  "name": "amarento-bot",
   "version": "1.0.0",
-  "description": "An example WhatsApp webhook server https://developers.facebook.com/docs/whatsapp/sample-app-endpoints",
+  "description": "A whatsapp messanger for RSVP and digital guestbook.",
   "main": "server.js",
   "scripts": {
     "start": "ts-node server.ts",

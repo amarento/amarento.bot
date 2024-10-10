@@ -6,32 +6,32 @@
 - [x] Update logic for whatsapp bot
 - [x] Implement logic to query and update database from response
 
-## 25.07.2024
+## 🤖 amarento.bot
 
 - [x] Handle error parsing names
 - [x] Create class to handle user state
 - [x] Handle people not coming to wedding ceremony
-- [ ] Handle people coming alone to wedding ceremony
+- [x] Handle people coming alone to wedding ceremony
 - [x] Create question for each template. TEMPLATE IS USELESS!
   - [x] Convert initial message to interactive message with CTA
   - [x] Convert summary to interactive message
   - [x] Convert good bye message to text message
 - [x] Goodbye message after "YES"
 - [x] Update initial message template to require user action.
-- [ ] Add header to each message.
+- [x] Add header to each message.
 - [x] Handle database connection
   - [x] Read data from database
     - [x] Read all clients
     - [x] Read number of RSVP
   - [x] Write and save data to database
+- [x] Reminder and QR Code
+  - [x] Create endpoint to send reminder message.
+  - [x] Create endpoint to send reminder with qr.
+    - [x] Push image to whatsapp api
+- [x] Stabilize webhook endpoint.
+- [ ] Add new endpoint to be able to set clients code in the amarento class.
 
-## Webhook server
-
-- [ ] Reminder and QR Code
-
-  - [ ] Create endpoint to send reminder message.
-  - [ ] Create endpoint to send reminder with qr.
-    - [ ] Push image to whatsapp api
+## 💚 amarento.id
 
 - [ ] Clients page
   - [ ] Create client table

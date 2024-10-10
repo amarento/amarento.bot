@@ -40,7 +40,7 @@ const api = new WhatsAppAPI(
     appSecret: env.WEBHOOK_APP_SECRET,
     webhookVerifyToken: env.WEBHOOK_VERIFY_TOKEN,
     secure: true,
-    v: "v20.0",
+    v: "v21.0",
   })
 );
 
@@ -81,9 +81,11 @@ app.post("/webhook", async (req: Request, res: Response) => {
   const signature = req.headers["x-hub-signature-256"] as string;
 
   try {
-    return await api.post(data, JSON.stringify(req.body), signature);
+    await api.post(data, JSON.stringify(req.body), signature);
+    return res.sendStatus(200);
   } catch (ex) {
-    console.log(ex);
+    logger.error(ex);
+    return res.sendStatus(200);
   }
 });
 
@@ -105,24 +107,28 @@ api.on.message = async ({ from, message, raw }) => {
     return;
   }
 
-  const clientId = await getClientId(from);
-  if (clientId instanceof Error) {
-    logger.info("User was not registered as a client in our database.");
-    return;
-  }
+  try {
+    const clientId = await getClientId(from);
+    if (clientId instanceof Error) {
+      logger.info("User was not registered as a client in our database.");
+      return;
+    }
 
-  const clientCode = await getClientCode(clientId);
-  if (clientCode instanceof Error) {
-    logger.info("Error occurs when loading client code.");
-    return;
-  }
+    const clientCode = await getClientCode(clientId);
+    if (clientCode instanceof Error) {
+      logger.info("Error occurs when loading client code.");
+      return;
+    }
 
-  if (code !== clientCode) {
-    logger.info("Client code does not match.");
-    return;
-  }
+    if (code !== clientCode) {
+      logger.info("Client code does not match.");
+      return;
+    }
 
-  amarento.onMessage(message);
+    amarento.onMessage(message);
+  } catch (ex) {
+    logger.error(ex);
+  }
 };
 
 app.get("/api/user-state", (_: Request, res: Response) => {

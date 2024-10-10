@@ -222,7 +222,7 @@ export class Amarento {
         await sendInteractiveButtonMessage(
           this.whatsappId,
           message.from,
-          MessageTemplate.numberOfGuest(nRSVP, "Wedding Cerremony"),
+          MessageTemplate.numberOfGuest(nRSVP, "Wedding Ceremony"),
           buttons
         );
         await this.api.markAsRead(this.whatsappId, message.id);
