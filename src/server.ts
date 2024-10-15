@@ -10,7 +10,11 @@ import { WhatsAppAPI } from "whatsapp-api-js";
 import { Node18 } from "whatsapp-api-js/setup/node";
 import { GetParams, PostData } from "whatsapp-api-js/types";
 import { ZodError } from "zod";
-import { getClient, getClientCode, getClientId } from "./db/webhook";
+import {
+  getClient,
+  getClientCode,
+  getClientIdFromWhatsapp,
+} from "./db/webhook";
 import { env } from "./env";
 import { logger } from "./logging/winston";
 import {
@@ -108,7 +112,7 @@ api.on.message = async ({ from, message, raw }) => {
   }
 
   try {
-    const clientId = await getClientId(from);
+    const clientId = await getClientIdFromWhatsapp(from);
     if (clientId instanceof Error) {
       logger.info("User was not registered as a client in our database.");
       return;

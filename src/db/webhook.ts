@@ -1,10 +1,12 @@
 import { eq } from "drizzle-orm";
 import { db } from ".";
 import UserMessage from "../model/UserMessage";
-import { clients, guests } from "./schema";
+import { clients, guests, GuestWithClient } from "./schema";
 
 /** method to get client id from whatsapp number. */
-export async function getClientId(number: string): Promise<Error | number> {
+export async function getClientIdFromWhatsapp(
+  number: string
+): Promise<Error | number> {
   const result = await db
     .select({ clientId: guests.clientId })
     .from(guests)
@@ -16,6 +18,7 @@ export async function getClientId(number: string): Promise<Error | number> {
   return result.clientId;
 }
 
+/** method to get client code from client id. */
 export async function getClientCode(clientId: number): Promise<Error | string> {
   const result = await db
     .select({ clientCode: clients.code })
@@ -30,7 +33,7 @@ export async function getClientCode(clientId: number): Promise<Error | string> {
   return result.clientCode;
 }
 
-/** method to get rsvp number from database. */
+/** method to get the number of rsvp from whatsapp number. */
 export async function getRSVP(number: string): Promise<Error | number> {
   const result = await db
     .select({ nRSVP: guests.nRSVPPlan })
@@ -68,6 +71,7 @@ export async function updateRSVP(
     );
 }
 
+/** method to get client from client code. */
 export async function getClient(clientCode: string) {
   const result = await db.query.clients.findFirst({
     where: eq(clients.code, clientCode),
@@ -77,6 +81,21 @@ export async function getClient(clientCode: string) {
   if (result === undefined)
     return new Error(
       `[${clientCode}] Error occurs while fetching client from client code.`
+    );
+  return result;
+}
+
+/** method to get client from whatsapp number. */
+
+export async function getGuestFromWhatsapp(number: string) {
+  const result: GuestWithClient | undefined = await db.query.guests.findFirst({
+    where: eq(guests.waNumber, number),
+    with: { client: true },
+  });
+
+  if (result === undefined)
+    return new Error(
+      `[${number}] Error occurs while fetching client from whatsapp number.`
     );
   return result;
 }

@@ -36,7 +36,7 @@ export const clients = createTable("clients", {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
-    () => new Date(),
+    () => new Date()
   ),
 });
 
@@ -81,7 +81,7 @@ export const guests = createTable(
   },
   (guest) => ({
     nameIndex: index("name_idx").on(guest.invNames),
-  }),
+  })
 );
 
 export const guestsRelations = relations(guests, ({ one }) => ({
@@ -93,7 +93,9 @@ export const guestsRelations = relations(guests, ({ one }) => ({
 
 export type NewGuest = typeof guests.$inferInsert;
 export type Guest = typeof guests.$inferSelect;
-
+export type GuestWithClient = Guest & {
+  client: Client;
+};
 export const users = createTable("user", {
   id: varchar("id", { length: 255 })
     .notNull()
@@ -138,7 +140,7 @@ export const accounts = createTable(
       columns: [account.provider, account.providerAccountId],
     }),
     userIdIdx: index("account_user_id_idx").on(account.userId),
-  }),
+  })
 );
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -161,7 +163,7 @@ export const sessions = createTable(
   },
   (session) => ({
     userIdIdx: index("session_user_id_idx").on(session.userId),
-  }),
+  })
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -180,5 +182,5 @@ export const verificationTokens = createTable(
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  }),
+  })
 );

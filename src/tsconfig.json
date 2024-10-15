@@ -23,6 +23,6 @@
     "strict": true /* Enable all strict type-checking options. */,
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "../clients/perkiaachen/webhook/perki.ts"],
   "exclude": ["node_modules"]
 }
