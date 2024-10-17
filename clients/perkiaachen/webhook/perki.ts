@@ -14,13 +14,15 @@ import { ServerMedia, ServerMessage } from "whatsapp-api-js/types";
 import { Client, Guest, GuestWithClient } from "../../../src/db/schema";
 import { getGuestFromWhatsapp } from "../../../src/db/webhook";
 import { logger } from "../../../src/logging/winston";
-import UserMessage from "../../../src/model/UserMessage";
-import UserMessageStore from "../../../src/model/UserMessageStore";
+
 import {
   generateInvitation,
   pathExist,
   toLocalTime,
 } from "../../../src/webhook/utils";
+import { updateRSVP } from "../db/webhook";
+import UserMessage from "../model/UserMessage";
+import UserMessageStore from "../model/UserMessageStore";
 
 export class Perki {
   private whatsappId: string;
@@ -89,12 +91,24 @@ export class Perki {
       );
       await this.api.sendMessage(this.whatsappId, message.from, response);
 
-      /** send reminder with qr code. */
-      if (isComing) {
-        const guest = await getGuestFromWhatsapp(message.from);
-        if (guest instanceof Error) return;
-        await this.sendReminder(guest);
+      const state = new UserMessage();
+      if (!isComing) {
+        /** confirm rsvp. */
+        state.setIsAttendDinner(false);
+        state.setNRsvpDinner(0);
+        await updateRSVP(message.from, state);
+        return;
       }
+
+      /** confirm rsvp. */
+      state.setIsAttendDinner(true);
+      state.setNRsvpDinner(1);
+      await updateRSVP(message.from, state);
+
+      /** send reminder with qr code. */
+      const guest = await getGuestFromWhatsapp(message.from);
+      if (guest instanceof Error) return;
+      await this.sendReminder(guest);
     }
   };
 

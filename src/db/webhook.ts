@@ -86,7 +86,6 @@ export async function getClient(clientCode: string) {
 }
 
 /** method to get client from whatsapp number. */
-
 export async function getGuestFromWhatsapp(number: string) {
   const result: GuestWithClient | undefined = await db.query.guests.findFirst({
     where: eq(guests.waNumber, number),
